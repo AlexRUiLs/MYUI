@@ -282,7 +282,7 @@
                 const tileDepth = 150;  // Updated depth
 
                 gamesList.forEach((game, index) => {
-                    let coverArtPath = game.CoverArtPath;
+                    let coverArtUrl = game.CoverArtUrl;
                     
                     const tile = document.createElement('div');
                     tile.className = 'game-tile';
@@ -290,7 +290,7 @@
                     tile.style.transform = `translateX(${index * tileWidth}px) translateZ(${-index * tileDepth}px)`;
 
                     tile.innerHTML = `
-                        <img src="${coverArtPath}" 
+                        <img src="${coverArtUrl}" 
                              alt="${game.Title} Cover Art" 
                              class="cover-art">
                         <div class="fallback-tile" style="display: none;">
@@ -302,7 +302,7 @@
                     const fallbackTile = tile.querySelector('.fallback-tile');
 
                     imgElement.onerror = () => {
-                        console.error('Failed to load image:', coverArtPath);
+                        console.error('Failed to load image:', coverArtUrl);
                         imgElement.style.display = 'none';
                         fallbackTile.style.display = 'flex';
                     };
@@ -701,6 +701,15 @@
             function launchGame(game, targetTile) {
                 const dashboard = document.querySelector('.dashboard');
                 
+                // Send LaunchGame request immediately
+                const getEndpoint = `http://localhost:8080/LaunchGame?Id=${game.Id}&Store=${game.Store}`;
+                fetch(getEndpoint)
+                    .then(response => response.text())
+                    .catch(error => {
+                        console.error('Error launching game:', error);
+                        return;
+                    });
+                
                 // Calculate the current transform values from the tile's current transform
                 const currentTransform = targetTile.style.transform;
                 const translateX = currentTransform.match(/translateX\(([-\d.]+)px\)/);
@@ -720,24 +729,21 @@
                 // Apply the animation programmatically
                 targetTile.style.animation = 'launchGame 1s ease-in forwards';
 
-                // Wait for animation to complete before making the API call
+                // Wait for animation to complete before minimizing/closing
                 setTimeout(() => {
-                    const getEndpoint = `http://localhost:8080/LaunchGame?Id=${game.Id}&Store=${game.Store}`;
-
-                    fetch(getEndpoint)
-                        .then(response => response.text())
-                        .then(data => {
-                            // Remove animation classes and styles after launch
-                            targetTile.classList.remove('launching');
-                            dashboard.classList.remove('launching');
-                            targetTile.style.animation = '';
+                    // Remove animation classes and styles after launch
+                    targetTile.classList.remove('launching');
+                    dashboard.classList.remove('launching');
+                    targetTile.style.animation = '';
+                    
+                    // Minimize/close the window after animation completes
+                    fetch('http://localhost:8080/CloseOrMinimizeAppWindowAfterGameLaunch')
+                        .then(() => {
+                            // Refresh the page after minimizing/closing
+                            window.location.reload();
                         })
                         .catch(error => {
-                            console.error('Error launching game:', error);
-                            // Remove animation classes and styles if there's an error
-                            targetTile.classList.remove('launching');
-                            dashboard.classList.remove('launching');
-                            targetTile.style.animation = '';
+                            console.error('Error minimizing window:', error);
                         });
                 }, 800); // Slightly shorter than the animation duration to ensure smooth transition
             }
