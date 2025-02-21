@@ -1,6 +1,8 @@
 # MYUI
 One Game Launcher custom UI themes.
 
+# API:
+
 Get all games: http://localhost:8080/GetAllGames
 
 Request game launch: http://localhost:8080/LaunchGame?Id=<game.Id>&Store=<game.Store>
