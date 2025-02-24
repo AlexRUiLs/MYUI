@@ -4,7 +4,7 @@ https://youtu.be/66sB1ZgfTtg
 
 One Game Launcher home page: https://ogl.app
 
-One Game Launcher reddit: r/OneGameLauncher
+One Game Launcher reddit: https://www.reddit.com/r/OneGameLauncher
 
 # API:
 
