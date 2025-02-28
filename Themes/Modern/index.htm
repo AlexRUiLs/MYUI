@@ -1,299 +1,229 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>One Game Launcher - MYUI - Simple</title>
-    <link rel="icon" type="image/x-icon" href="https://ogl.app/favicon.ico">
+    <title>One Game Launcher - Modern Design</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
     <style>
-        body {
-            background-color: #36393f;
-            color: #ffffff;
-            font-family: Arial, sans-serif;
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --background: #0f172a;
+            --surface: #1e293b;
+            --text: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent: #22d3ee;
         }
 
-        .game-tile {
-            background-color: #2c2f33;
-            border: 1px solid #7289da;
-            padding: 0;
-            margin: 5px;
-            display: inline-block;
-            cursor: pointer;
-            color: #ffffff;
-            border-radius: 5px;
-            transition: transform 0.2s;
-            width: 110px;
-            height: 160px;
-            text-align: center;
-            overflow: hidden;
-            position: relative;
-        }
-
-            .game-tile img {
-                width: 110px;
-                height: 160px;
-                border-radius: 5px;
-                position: absolute;
-                top: 0;
-                left: 0;
-                z-index: 1;
-                object-fit: cover;
-            }
-
-            .game-tile .text-content {
-                position: absolute;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                align-items: center;
-                z-index: 0;
-                padding: 10px;
-                box-sizing: border-box;
-                background-color: #2c2f33;
-            }
-
-            .game-tile:hover {
-                transform: scale(1.05);
-                background-color: #7289da;
-            }
-
-        .game-title {
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            width: 100%;
-            margin-bottom: 5px;
-        }
-
-        h1 {
-            color: #7289da;
-        }
-
-        .switch {
-            position: relative;
-            display: inline-block;
-            width: 60px;
-            height: 34px;
-            transition: all 0.3s ease;
-            outline: none;
-        }
-
-            .switch input {
-                opacity: 0;
-                width: 0;
-                height: 0;
-            }
-
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #ccc;
-            transition: .4s;
-        }
-
-            .slider:before {
-                position: absolute;
-                content: "";
-                height: 26px;
-                width: 26px;
-                left: 4px;
-                bottom: 4px;
-                background-color: white;
-                transition: .4s;
-            }
-
-        input:checked + .slider {
-            background-color: #2196F3;
-        }
-
-            input:checked + .slider:before {
-                transform: translateX(26px);
-            }
-
-        .slider.round {
-            border-radius: 34px;
-        }
-
-            .slider.round:before {
-                border-radius: 50%;
-            }
-
-        .spinner {
-            border: 6px solid #f3f3f3;
-            border-radius: 50%;
-            border-top: 6px solid #7289da;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 20px auto;
-            display: none;
-        }
-
-        @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-
-            100% {
-                transform: rotate(360deg);
-            }
-        }
-
-        dialog {
-            background-color: #2c2f33;
-            color: #ffffff;
-            border: 1px solid #7289da;
-            border-radius: 5px;
-            padding: 20px;
-            width: 300px;
-        }
-
-            dialog::backdrop {
-                background-color: rgba(0, 0, 0, 0.8);
-            }
-
-        .fallback-tile {
-            width: 100%;
-            height: 100%;
-            background-color: #444444;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 20px;
-            box-sizing: border-box;
-            border-radius: 5px;
-        }
-
-        .fallback-title {
-            color: #ffffff;
-            font-size: 24px;
-            font-weight: bold;
-            word-wrap: break-word;
-        }
-
-        .game-tile .fallback-tile {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 1;
+        * {
             margin: 0;
-            border-radius: 5px;
+            padding: 0;
+            box-sizing: border-box;
         }
 
-        .game-tile.focused {
-            transform: scale(1.05);
-            box-shadow: 0 0 10px rgba(114, 137, 218, 0.8);
-            border-color: #ffffff;
+        body {
+            background-color: var(--background);
+            color: var(--text);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            background: var(--surface);
+            padding: 1rem;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
         }
 
         .control-buttons {
             display: flex;
-            gap: 10px;
+            gap: 1rem;
             align-items: center;
         }
 
         .control-button {
+            background: transparent;
+            border: 2px solid var(--primary);
+            color: var(--primary);
             width: 40px;
             height: 40px;
-            border-radius: 50%;
-            border: 2px solid #ffffff;
-            background: rgba(0, 0, 0, 0.5);
-            color: #ffffff;
+            border-radius: 12px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
+            font-size: 1.25rem;
             transition: all 0.3s ease;
-            padding: 0;
-            line-height: 0;
-            text-align: center;
+        }
+
+        .control-button:hover {
+            background: var(--primary);
+            color: var(--text);
+            transform: translateY(-2px);
+        }
+
+        .control-button.focused {
+            background: var(--primary);
+            color: var(--text);
+            box-shadow: 0 0 0 3px var(--primary-dark);
+        }
+
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1.5rem;
+            padding: 1rem;
+        }
+
+        .game-tile {
+            background: var(--surface);
+            border-radius: 1rem;
+            overflow: hidden;
+            transition: all 0.3s ease;
             position: relative;
-            outline: none;
+            aspect-ratio: 3/4;
+            cursor: pointer;
         }
 
-            .control-button#close-button::before {
-                content: "✕";
-                position: absolute;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-            }
-
-            .control-button#minimize-button::before {
-                content: "−";
-                position: absolute;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-            }
-
-            .control-button:hover {
-                background: rgba(255, 255, 255, 0.3);
-            }
-
-            .control-button.focused {
-                transform: scale(1.2);
-                box-shadow: 0 0 15px rgba(114, 137, 218, 0.8);
-                border-color: #7289da;
-                background: rgba(255, 255, 255, 0.3);
-                z-index: 10;
-            }
-
-        .switch.focused {
-            transform: scale(1.2);
-            box-shadow: 0 0 15px rgba(114, 137, 218, 0.8);
-            z-index: 10;
+        .game-tile img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: all 0.3s ease;
         }
 
-            .switch.focused .slider {
-                border: 2px solid #7289da;
-                background-color: #2196F3;
-                opacity: 0.8;
+        .game-tile .text-content {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 1.5rem;
+            background: linear-gradient(transparent, rgba(0, 0, 0, 0.9));
+            color: var(--text);
+            transform: translateY(100%);
+            transition: all 0.3s ease;
+        }
+
+        .game-tile:hover .text-content,
+        .game-tile.focused .text-content {
+            transform: translateY(0);
+        }
+
+        .game-tile:hover,
+        .game-tile.focused {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.25);
+        }
+
+        .game-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text);
+        }
+
+        .store-name {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .fallback-tile {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, var(--primary-dark), var(--primary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid var(--surface);
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 2rem auto;
+            display: none;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        dialog {
+            background: var(--surface);
+            color: var(--text);
+            border: none;
+            border-radius: 1rem;
+            padding: 2rem;
+            max-width: 400px;
+            box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+        }
+
+        dialog::backdrop {
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+        }
+
+        dialog button {
+            background: var(--primary);
+            color: var(--text);
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-size: 1rem;
+            margin-top: 1rem;
+            margin-right: 0.5rem;
+            transition: all 0.2s ease;
+        }
+
+        dialog button:hover {
+            background: var(--primary-dark);
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
             }
 
-        .control-button, .switch {
-            transition: all 0.2s ease-in-out;
+            .games-grid {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+                gap: 1rem;
+            }
         }
     </style>
 </head>
 <body>
-    <div style="display: flex; align-items: center;" class="control-buttons">
-        <button class="control-button" id="minimize-button" title="Minimize" tabindex="0"></button>
-        <button class="control-button" id="close-button" title="Close" tabindex="0"></button>
-        <label class="switch" tabindex="0">
-            <input type="checkbox" id="cover-art-toggle">
-            <span class="slider round"></span>
-        </label>
-        <p style="margin-left: 10px;">Hide cover art</p>
+    <div class="header">
+        <div class="control-buttons">
+            <button class="control-button" id="minimize-button" title="Minimize" tabindex="0">−</button>
+            <button class="control-button" id="close-button" title="Close" tabindex="0">×</button>
+        </div>
     </div>
 
-    <div id="games-tiles">
+    <div id="games-tiles" class="games-grid">
         <!-- Games tiles will be populated here -->
     </div>
 
-    <!-- Spinner for loading state -->
     <div class="spinner" id="loading-spinner"></div>
 
-    <!-- Confirmation dialog -->
     <dialog id="confirm-dialog">
         <p id="confirm-message"></p>
         <button id="confirm-yes">Yes</button>
         <button id="confirm-no">No</button>
     </dialog>
 
-    <!-- Alert dialog -->
     <dialog id="alert-dialog">
         <p id="alert-message"></p>
         <button id="alert-ok">OK</button>
@@ -301,26 +231,6 @@
 
     <script>
         let isLaunchingGame = false;
-        const consoleMessages = [];
-
-        // Override console methods to capture messages
-        ['log', 'error', 'warn', 'info'].forEach(method => {
-            const original = console[method];
-            console[method] = function (...args) {
-                consoleMessages.push({ method, message: args.join(' ') });
-                original.apply(console, args);
-            };
-        });
-
-        // Capture network errors
-        window.addEventListener('error', function (event) {
-            consoleMessages.push({ method: 'error', message: event.message });
-        });
-
-        // Capture unhandled promise rejections (e.g., network errors)
-        window.addEventListener('unhandledrejection', function (event) {
-            consoleMessages.push({ method: 'error', message: event.reason.message });
-        });
 
         document.addEventListener("DOMContentLoaded", function () {
             const loadingSpinner = document.getElementById('loading-spinner');
@@ -337,21 +247,21 @@
 
                     gamesList.forEach(game => {
                         let coverArtUrl = game.CoverArtUrl;
-
+                        
                         const tile = document.createElement('div');
                         tile.className = 'game-tile';
                         tile.title = game.Title;
 
                         tile.innerHTML = `
-                                    <img src="${coverArtUrl}" alt="${game.Title} Cover Art" class="cover-art">
-                                    <div class="fallback-tile" style="display: none;">
-                                        <div class="fallback-title">${game.Title}</div>
-                                    </div>
-                                    <div class="text-content">
-                                        <strong class="game-title">${game.Title}</strong>
-                                        <p>${game.Store}</p>
-                                    </div>
-                                `;
+                            <img src="${coverArtUrl}" alt="${game.Title} Cover Art" class="cover-art">
+                            <div class="fallback-tile" style="display: none;">
+                                <div class="game-title">${game.Title}</div>
+                            </div>
+                            <div class="text-content">
+                                <div class="game-title">${game.Title}</div>
+                                <div class="store-name">${game.Store}</div>
+                            </div>
+                        `;
 
                         const imgElement = tile.querySelector('img');
                         const fallbackTile = tile.querySelector('.fallback-tile');
@@ -374,7 +284,6 @@
                         tilesContainer.appendChild(tile);
                     });
 
-                    // Initialize focus on the first game tile
                     updateFocus();
                 })
                 .catch(error => {
@@ -382,17 +291,6 @@
                     console.error('Error fetching games list:', error);
                     showAlert('Failed to fetch games list. Make sure OGL MYUI API server is running.');
                 });
-
-            document.getElementById('cover-art-toggle').addEventListener('change', function () {
-                const coverArts = document.querySelectorAll('.cover-art');
-                const textContents = document.querySelectorAll('.text-content');
-                coverArts.forEach(img => {
-                    img.style.display = this.checked ? 'none' : 'block';
-                });
-                textContents.forEach(text => {
-                    text.style.zIndex = this.checked ? '1' : '0';
-                });
-            });
 
             document.getElementById('minimize-button').addEventListener('click', function () {
                 fetch('http://localhost:8080/MinimizeAppWindow')
@@ -404,7 +302,6 @@
                     .catch(error => console.error('Error closing window:', error));
             });
 
-            // Add keyboard support
             let currentIndex = 0;
             let keysPressed = new Set();
             let animationFrameId = null;
@@ -419,7 +316,7 @@
             const debounceTime = 300;
             const itemsToScroll = 4;
             const pageScrollSpeed = 0.15;
-            const controlElements = ['minimize-button', 'close-button', 'cover-art-toggle'];
+            const controlElements = ['minimize-button', 'close-button'];
 
             function updateFocus() {
                 const gameTiles = document.getElementsByClassName('game-tile');
@@ -467,10 +364,7 @@
             }
 
             function updateControlButtonsFocus() {
-                console.log('Updating control buttons focus. Current control index:', currentControlIndex);
-
-                // Remove focus from all elements
-                document.querySelectorAll('.control-button, .switch').forEach(el => {
+                document.querySelectorAll('.control-button').forEach(el => {
                     el.classList.remove('focused');
                 });
 
@@ -481,25 +375,16 @@
                 if (isInControlButtons && currentControlIndex >= 0) {
                     const currentElement = document.getElementById(controlElements[currentControlIndex]);
                     if (currentElement) {
-                        if (currentElement.id === 'cover-art-toggle') {
-                            const switchLabel = currentElement.parentElement;
-                            switchLabel.classList.add('focused');
-                        } else {
-                            currentElement.classList.add('focused');
-                        }
+                        currentElement.classList.add('focused');
                     }
                 }
             }
-
 
             document.addEventListener('keydown', (event) => {
                 const currentTime = Date.now();
                 const gameTiles = document.getElementsByClassName('game-tile');
 
-                console.log('Key down event:', event.key);
-
                 if (isInControlButtons) {
-                    // Handle controls navigation
                     if ((event.key === 'ArrowLeft' || event.key === 'a' || event.key === 'GamepadLeft') &&
                         currentTime - lastButtonPressTime > debounceTime) {
                         lastButtonPressTime = currentTime;
@@ -527,7 +412,6 @@
                     return;
                 }
 
-                // Handle game tiles navigation
                 if ((event.key === 'ArrowUp' || event.key === 'w' || event.key === 'GamepadUp') &&
                     currentTime - lastButtonPressTime > debounceTime) {
                     lastButtonPressTime = currentTime;
@@ -573,7 +457,6 @@
                 }
             });
 
-
             document.addEventListener('keyup', (event) => {
                 if (keysPressed.has(event.key)) {
                     keysPressed.delete(event.key);
@@ -586,7 +469,6 @@
                 }
             });
 
-            // Update gamepad support
             window.addEventListener("gamepadconnected", function (e) {
                 console.log("Gamepad connected:", e.gamepad);
                 let gamepadHoldStartTime = 0;
@@ -601,32 +483,30 @@
 
                     if (gamepad) {
                         if (isInControlButtons) {
-                            // Handle controls navigation with gamepad
                             if ((gamepad.axes[0] < -0.5 || gamepad.buttons[14].pressed) &&
-                                (currentTime - lastButtonPressTime > debounceTime)) { // D-pad Left
+                                (currentTime - lastButtonPressTime > debounceTime)) {
                                 lastButtonPressTime = currentTime;
                                 currentControlIndex = (currentControlIndex - 1 + controlElements.length) % controlElements.length;
                                 updateControlButtonsFocus();
                             } else if ((gamepad.axes[0] > 0.5 || gamepad.buttons[15].pressed) &&
-                                (currentTime - lastButtonPressTime > debounceTime)) { // D-pad Right
+                                (currentTime - lastButtonPressTime > debounceTime)) {
                                 lastButtonPressTime = currentTime;
                                 currentControlIndex = (currentControlIndex + 1) % controlElements.length;
                                 updateControlButtonsFocus();
-                            } else if (gamepad.buttons[13].pressed && (currentTime - lastButtonPressTime > debounceTime)) { // Down
+                            } else if (gamepad.buttons[13].pressed && (currentTime - lastButtonPressTime > debounceTime)) {
                                 lastButtonPressTime = currentTime;
                                 isInControlButtons = false;
                                 currentControlIndex = -1;
                                 updateControlButtonsFocus();
                                 updateFocus();
-                            } else if (gamepad.buttons[0].pressed && (currentTime - lastButtonPressTime > debounceTime)) { // A button
+                            } else if (gamepad.buttons[0].pressed && (currentTime - lastButtonPressTime > debounceTime)) {
                                 lastButtonPressTime = currentTime;
                                 handleControlAction(controlElements[currentControlIndex]);
                             }
                             return;
                         }
 
-                        // Handle game tiles navigation with gamepad
-                        if (gamepad.buttons[12].pressed && (currentTime - lastButtonPressTime > debounceTime)) { // Up
+                        if (gamepad.buttons[12].pressed && (currentTime - lastButtonPressTime > debounceTime)) {
                             lastButtonPressTime = currentTime;
                             isInControlButtons = true;
                             currentControlIndex = 0;
@@ -636,9 +516,9 @@
                             lastButtonPressTime = currentTime;
                             isShoulderScrolling = true;
 
-                            if (gamepad.buttons[4].pressed) { // LB
+                            if (gamepad.buttons[4].pressed) {
                                 keyScrollTargetIndex = Math.max(Math.round(currentIndex - itemsToScroll), 0);
-                            } else { // RB
+                            } else {
                                 keyScrollTargetIndex = Math.min(Math.round(currentIndex + itemsToScroll), gameTiles.length - 1);
                             }
                         }
@@ -651,16 +531,16 @@
                                 currentIndex = keyScrollTargetIndex;
                                 isShoulderScrolling = false;
                             }
-                        } else if (gamepad.axes[0] < -0.5 || gamepad.buttons[14].pressed) { // D-pad Left
+                        } else if (gamepad.axes[0] < -0.5 || gamepad.buttons[14].pressed) {
                             currentIndex = Math.max(currentIndex - scrollSpeed, 0);
-                        } else if (gamepad.axes[0] > 0.5 || gamepad.buttons[15].pressed) { // D-pad Right
+                        } else if (gamepad.axes[0] > 0.5 || gamepad.buttons[15].pressed) {
                             currentIndex = Math.min(currentIndex + scrollSpeed, gameTiles.length - 1);
                         }
 
                         currentIndex = Math.max(0, Math.min(currentIndex, gameTiles.length - 1));
                         updateFocus();
 
-                        if (gamepad.buttons[0].pressed) { // A button
+                        if (gamepad.buttons[0].pressed) {
                             const selectedTile = gameTiles[Math.round(currentIndex)];
                             if (selectedTile) {
                                 selectedTile.click();
@@ -702,10 +582,8 @@
             fetch(`http://localhost:8080/LaunchGame?Id=${game.Id}&Store=${game.Store}`)
                 .then(response => response.text())
                 .then(data => {
-                    // Immediately call CloseOrMinimizeAppWindowAfterGameLaunch
                     fetch('http://localhost:8080/CloseOrMinimizeAppWindowAfterGameLaunch')
                         .then(() => {
-                            // Wait for 1 second before refreshing the page
                             setTimeout(() => {
                                 window.location.reload();
                             }, 1000);
@@ -720,7 +598,7 @@
                 .finally(() => {
                     setTimeout(() => {
                         isLaunchingGame = false;
-                    }, 3000); // Wait for 3 seconds before setting isLaunchingGame to false
+                    }, 3000);
                 });
         }
 
@@ -729,11 +607,7 @@
             const alertMessage = document.getElementById('alert-message');
             const alertOk = document.getElementById('alert-ok');
 
-            // Append console messages to the alert message
-            const consoleOutput = consoleMessages.map(entry => `[${entry.method.toUpperCase()}] ${entry.message}`).join('\n');
-            const fullMessage = `${message}\n\nConsole Messages:\n${consoleOutput}`;
-
-            alertMessage.textContent = fullMessage;
+            alertMessage.textContent = message;
 
             alertOk.onclick = function () {
                 alertDialog.close();
@@ -751,9 +625,6 @@
                 case 'close-button':
                     fetch('http://localhost:8080/CloseAppWindow')
                         .catch(error => console.error('Error closing window:', error));
-                    break;
-                case 'cover-art-toggle':
-                    document.getElementById('cover-art-toggle').click();
                     break;
             }
         }
