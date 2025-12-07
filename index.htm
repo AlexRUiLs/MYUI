@@ -1,0 +1,4741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>One Game Launcher - MYUI - PS</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <style>
+        :root {
+            --ps-blue: #00439c;
+            --ps-light-blue: #2f6bc1;
+            --ps-bright-blue: #00a3e0;
+            --background-dark: #020c1c;
+            --background-light: #162b50;
+            --text: #ffffff;
+            --text-secondary: #c4d7f5;
+            --accent: #0072ce;
+            --initial-bg-color: #202020; /* Define new variable for clarity */
+            --game-tile-width: 150px; /* New variable for game tile width */
+            --game-tile-height: 150px; /* New variable for game tile height */
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--initial-bg-color); /* Ensure solid background color */
+            color: var(--text);
+            font-family: 'SST', 'Segoe UI', system-ui, -apple-system, sans-serif;
+            min-height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Control buttons styling - moved to left side */
+        .control-buttons {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 1100; /* Higher z-index than error container */
+        }
+
+        /* Search container styling */
+        .search-container {
+            position: fixed;
+            top: 20px;
+            right: 200px; /* Increased spacing to prevent overlap with battery indicator */
+            display: flex;
+            align-items: center;
+            z-index: 1100;
+        }
+
+        /* Search input styling */
+        .search-input {
+            width: 300px;
+            height: 40px;
+            padding: 0 15px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            color: #ffffff;
+            font-family: 'SST', 'Segoe UI', system-ui, -apple-system, sans-serif;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .search-input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .search-input:focus {
+            border-color: var(--ps-bright-blue);
+            background: rgba(0, 0, 0, 0.8);
+            box-shadow: 0 0 15px rgba(0, 163, 224, 0.3);
+        }
+
+        /* Search icon */
+        .search-icon {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255, 255, 255, 0.6);
+            pointer-events: none;
+            font-size: 16px;
+        }
+
+        /* Clear button */
+        .search-clear {
+            position: absolute;
+            right: 40px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.6);
+            cursor: pointer;
+            font-size: 16px;
+            padding: 0;
+            width: 20px;
+            height: 20px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.3s ease;
+        }
+
+        .search-clear:hover {
+            color: #ffffff;
+        }
+
+        .search-clear.visible {
+            display: flex;
+        }
+
+        .control-button {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid #ffffff;
+            background: rgba(0, 0, 0, 0.5);
+            color: #ffffff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            transition: all 0.3s ease;
+            padding: 0;
+            line-height: 0;
+            text-align: center;
+            position: relative;
+        }
+
+            .control-button#close-button {
+                font-size: 24px;
+            }
+
+            .control-button#minimize-button {
+                font-size: 28px;
+                line-height: 0;
+            }
+
+            .control-button#close-button::before {
+                content: "✕";
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+            }
+
+            .control-button#minimize-button::before {
+                content: "−";
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+            }
+
+            .control-button.focused {
+                transform: scale(1.2);
+                box-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
+                background: rgba(255, 255, 255, 0.2);
+            }
+
+            .control-button:hover {
+                background: rgba(255, 255, 255, 0.3);
+            }
+
+        /* Remove the wave background pattern and adjust styling for the background overlay */
+
+        #game-bg-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center center;
+            z-index: -2;
+            opacity: 0;
+            transition: opacity 0.6s cubic-bezier(0.165, 0.84, 0.44, 1);
+            background-color: transparent;
+        }
+
+        /* Add second background layer for crossfade effect */
+        #game-bg-overlay-2 {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center center;
+            z-index: -3;
+            opacity: 0;
+            transition: opacity 0.6s cubic-bezier(0.165, 0.84, 0.44, 1);
+            background-color: transparent;
+        }
+
+        /* Add PS5-style foreground gradient overlay */
+        .ps5-gradient-overlay {
+            display: none !important;
+        }
+
+        /* Remove the ::after pseudo-element that was creating the blue filter */
+        #game-bg-overlay::after {
+            display: none;
+        }
+
+        /* Remove the wave background element completely */
+        .ps-wave-bg {
+            display: none;
+        }
+
+        /* Adjust header padding to match with asymmetric main padding */
+        .ps-header {
+            display: none;
+        }
+
+        .ps-logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+        }
+
+            .ps-logo svg {
+                width: 32px;
+                height: 32px;
+                margin-right: 10px;
+            }
+
+        .ps-control-buttons {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .ps-button {
+            background: transparent;
+            border: none;
+            color: var(--text);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            opacity: 0.7;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+        }
+
+            .ps-button:hover, .ps-button.focused {
+                opacity: 1;
+                transform: scale(1.1);
+                background: rgba(255, 255, 255, 0.1);
+            }
+
+        /* Ensure the ps-main has enough padding to accommodate potential overflow */
+        .ps-main {
+            position: relative;
+            padding: 4.5rem 4rem 0 5.5rem; /* Increased top padding to make room for control buttons */
+            height: calc(100vh - 4.5rem); /* Adjusted height */
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .ps-category {
+            margin-bottom: 1rem;
+        }
+
+        /* Removed ps-category-title since we're removing the "Games" label */
+        .ps-category-title {
+            display: none;
+        }
+
+        /* Make sure the carousel container accommodates the extra space */
+        .ps-games-carousel-container {
+            position: relative;
+            width: calc(100% + 2rem);
+            overflow: visible; /* Allow overflow for proper visibility */
+            padding: 1rem 12rem 2.5rem 0; /* Increased right padding significantly */
+            margin: 0;
+            /* Enhanced touch interaction */
+            touch-action: pan-x;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* Make sure the games row has enough space */
+        .ps-games-row {
+            display: flex;
+            position: relative;
+            z-index: 2;
+            transition: transform 0.25s cubic-bezier(0.25, 0.1, 0.25, 1);
+            padding: 1rem 0;
+            /* Smooth touch scrolling */
+            will-change: transform;
+        }
+
+        /* Ensure both first and last items are visible when focused */
+        #ps-games-row > .ps-game-tile:first-child {
+            margin-left: 2.5rem; /* Extra margin for the first item */
+        }
+
+        /* Ensure the last item is always fully visible by adding extra right margin */
+        #ps-games-row > .ps-game-tile:last-child {
+            margin-right: 2rem; /* Reduced margin since padding now handles visibility */
+        }
+
+            /* No need for special transform on last item when active, the extra margin handles it */
+            #ps-games-row > .ps-game-tile:last-child.active {
+                /* Remove the translateX that was shifting it left */
+                transform: scale(1.15); /* Just scale normally like other tiles */
+            }
+
+        /* Regular game tiles - Square */
+        .ps-game-tile {
+            flex: 0 0 auto;
+            width: var(--game-tile-width);
+            height: var(--game-tile-height); /* Use CSS variables for dimensions */
+            margin-right: 1.25rem;
+            position: relative;
+            border-radius: 0.75rem;
+            transition: all 0.2s cubic-bezier(0.165, 0.84, 0.44, 1);
+            overflow: hidden;
+            box-shadow: 0 5px 15px -5px rgba(0, 0, 0, 0.3);
+            cursor: pointer;
+            /* Enhanced touch interaction */
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+            /* Add touch target minimum size */
+            min-width: 44px;
+            min-height: 44px;
+            /* Improve touch responsiveness */
+            -webkit-tap-highlight-color: rgba(0, 163, 224, 0.3);
+            tap-highlight-color: rgba(0, 163, 224, 0.3);
+        }
+
+            /* Add touch feedback for game tiles */
+            .ps-game-tile:active {
+                transform: scale(0.95);
+                box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.5);
+            }
+
+            /* Ensure touch feedback doesn't interfere with active state */
+            .ps-game-tile.active:active {
+                transform: scale(1.1);
+            }
+
+        /* Style for game tile background images - cropped square by default */
+        .ps-game-tile-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            transition: all 0.4s ease;
+        }
+
+        .ps-game-tile:hover .ps-game-tile-background {
+            transform: scale(1.05);
+        }
+
+        /* Active/focused tile transforms to rectangular cover art ratio */
+        .ps-game-tile.active {
+            transform: scale(1.15);
+            height: calc(var(--game-tile-height) * 1.42); /* Scale height proportionally for active tiles */
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 0 0 2px var(--ps-bright-blue), 0 0 15px rgba(0, 163, 224, 0.5);
+            z-index: 10;
+            transform-origin: center bottom; /* Ensure scaling doesn't push tile out of view */
+        }
+
+            /* Alternative approach if you want to minimize empty space but avoid cropping */
+            .ps-game-tile.active .ps-game-tile-background {
+                background-size: 100% auto; /* Cover the full width, auto height */
+                background-position: top center; /* Align to top to show character faces */
+                background-repeat: no-repeat;
+                background-color: rgba(0, 0, 0, 0.8);
+            }
+
+
+        /* Game metadata overlay - Hide by default */
+        .ps-game-tile-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 0.5rem;
+            background: linear-gradient(transparent, rgba(0, 0, 0, 0.8) 70%);
+            transition: all 0.3s ease;
+            opacity: 0; /* Start with zero opacity */
+            transform: translateY(10px); /* Slight position shift for animation */
+            pointer-events: none; /* Ensure it doesn't interfere with clicks */
+        }
+
+        /* Optional: You can also show on hover for mouse users */
+        .ps-game-tile:hover:not(.active) .ps-game-tile-overlay {
+            opacity: 0.8; /* Slightly less visible than active state */
+            transform: translateY(0);
+        }
+
+        /* Show overlay only when the tile is active/focused */
+        .ps-game-tile.active .ps-game-tile-overlay {
+            opacity: 1;
+            transform: translateY(0); /* Reset the position */
+            padding-bottom: 0.75rem;
+            background: linear-gradient(transparent, rgba(0, 0, 0, 0.9) 50%);
+        }
+
+        /* Game title and store name styling remains the same */
+        .ps-game-title {
+            font-size: 0.75rem;
+            font-weight: 400;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            transition: all 0.3s ease;
+        }
+
+        .ps-store-name {
+            font-size: 0.65rem;
+            opacity: 0.7;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Fallback for missing images */
+        .ps-fallback-tile {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 0.75rem;
+            text-align: center;
+            background: linear-gradient(45deg, var(--ps-blue), var(--ps-light-blue));
+            position: absolute;
+            top: 0;
+            left: 0;
+            border-radius: 0.75rem;
+        }
+
+            .ps-fallback-tile .game-title {
+                font-size: 0.7rem;
+                line-height: 1.2;
+                max-height: 80%;
+                overflow: hidden;
+            }
+
+        /* Game focus indicator - PS5-like underline */
+        .ps-focus-indicator {
+            position: absolute;
+            bottom: -3px;
+            left: 50%;
+            transform: translateX(-50%) scaleX(0);
+            height: 3px;
+            width: 70%;
+            background: var(--ps-bright-blue);
+            border-radius: 2px;
+            transition: transform 0.3s ease;
+        }
+
+        .ps-game-tile.active .ps-focus-indicator {
+            transform: translateX(-50%) scaleX(1);
+        }
+
+        /* Game details section - Ultra compact design */
+        .ps-game-details {
+            margin-top: 1rem;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            max-width: 700px;
+            width: 100%;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease;
+            position: relative;
+            z-index: 2;
+            height: 0;
+            overflow: hidden;
+            /* Add background to ensure text visibility */
+            background: rgba(0, 0, 0, 0.75);
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5);
+            /* Add subtle border for definition */
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            /* Ensure text is consistently visible */
+            color: var(--text);
+        }
+
+            .ps-game-details.visible {
+                opacity: 1;
+                transform: translateY(0);
+                height: auto;
+            }
+
+        /* Remove cover art section completely */
+        .ps-game-cover {
+            display: none;
+        }
+
+        .ps-game-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        /* Game header section with title and store on same line */
+        .ps-game-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .ps-game-info h2 {
+            font-size: 1.6rem;
+            font-weight: 600;
+            margin: 0;
+            line-height: 1.2;
+            flex: 1;
+            /* Add text shadow for better readability */
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .ps-game-info .ps-store-badge {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 0.5rem;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            flex-shrink: 0;
+        }
+
+        /* HowLongToBeat section styling */
+        .ps-hltb-section {
+            margin: 1.5rem 0;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+            .ps-hltb-section h3 {
+                font-size: 1.2rem;
+                margin-bottom: 1rem;
+                font-weight: 500;
+                color: var(--ps-bright-blue);
+                /* Add text shadow for better visibility */
+                text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+            }
+
+        .ps-hltb-times {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            /* Add subtle background for better readability */
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 0.5rem;
+        }
+
+        .ps-hltb-time {
+            min-width: 120px;
+        }
+
+        .ps-hltb-label {
+            font-size: 0.8rem;
+            opacity: 0.8;
+            margin-bottom: 0.3rem;
+        }
+
+        .ps-hltb-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+            /* Make the values more visible */
+            color: var(--text);
+        }
+
+        .ps-hltb-loading {
+            font-style: italic;
+            opacity: 0.8;
+            font-size: 0.9rem;
+            padding: 1rem;
+        }
+
+        .ps-game-actions {
+            display: flex;
+            justify-content: center;
+            margin-top: 0.5rem;
+            padding-top: 0.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .ps-launch-btn {
+            background: var(--ps-bright-blue);
+            color: #fff;
+            border: none;
+            padding: 0.6rem 2rem;
+            border-radius: 1.5rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            min-width: 120px;
+            justify-content: center;
+        }
+
+            .ps-launch-btn:hover {
+                background: var(--ps-blue);
+                transform: translateY(-2px);
+            }
+
+        /* Loading spinner */
+        .ps-spinner {
+            width: 80px;
+            height: 80px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            border-top: 4px solid var(--ps-bright-blue);
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            margin-left: -40px;
+            margin-top: -40px;
+            animation: spin 1s linear infinite;
+            z-index: 999;
+            display: none;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Dialog styling */
+        dialog {
+            background: rgba(10, 23, 46, 0.95);
+            color: var(--text);
+            border: none;
+            border-radius: 1rem;
+            padding: 2rem;
+            max-width: 400px;
+            box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.5);
+        }
+
+            dialog::backdrop {
+                background: rgba(0, 0, 0, 0.7);
+                backdrop-filter: blur(4px);
+            }
+
+            dialog button {
+                background: var(--ps-bright-blue);
+                color: var(--text);
+                border: none;
+                padding: 0.75rem 1.5rem;
+                border-radius: 2rem;
+                cursor: pointer;
+                font-size: 1rem;
+                margin-top: 1.5rem;
+                margin-right: 0.5rem;
+                transition: all 0.2s ease;
+            }
+
+                dialog button:hover {
+                    background: var(--ps-blue);
+                    transform: translateY(-2px);
+                }
+
+        /* Settings dialog specific button styling */
+        #settings-dialog button {
+            background: #666666;
+            color: var(--text);
+        }
+
+            #settings-dialog button:hover {
+                background: #777777;
+                transform: translateY(-2px);
+            }
+
+        /* Background loading indicator */
+        .bg-loading {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-size: 12px;
+            display: none;
+        }
+
+        /* When game is launching */
+        .launching-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 1000;
+        }
+
+        .launching-text {
+            font-size: 2rem;
+            margin-top: 2rem;
+            color: var(--ps-bright-blue);
+        }
+
+        /* PS5-style scrolling animation */
+        @keyframes scrollPulse {
+            0% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(5px);
+            }
+
+            100% {
+                transform: translateY(0);
+            }
+        }
+
+        .ps-scroll-indicator {
+            position: absolute;
+            right: 2rem;
+            top: 50%;
+            transform: translateY(-50%);
+            opacity: 0.5;
+            animation: scrollPulse 2s infinite;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            pointer-events: none;
+        }
+
+            .ps-scroll-indicator svg {
+                width: 24px;
+                height: 24px;
+                margin-bottom: 0.5rem;
+            }
+
+            .ps-scroll-indicator span {
+                font-size: 0.7rem;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                transform: rotate(90deg);
+                transform-origin: center;
+                white-space: nowrap;
+            }
+
+        /* Game context menu */
+        .game-context-menu {
+            position: absolute;
+            bottom: 3rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 2rem;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+
+            .game-context-menu.visible {
+                opacity: 1;
+                pointer-events: auto;
+            }
+
+        .context-menu-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: var(--text);
+            opacity: 0.7;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+            .context-menu-item:hover {
+                opacity: 1;
+                transform: translateY(-3px);
+            }
+
+        .context-menu-icon {
+            width: 30px;
+            height: 30px;
+            margin-bottom: 0.5rem;
+            color: var(--text);
+        }
+
+        .context-menu-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        #game-bg-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center center;
+            z-index: -2;
+            opacity: 0;
+            transition: opacity 1s ease;
+        }
+
+        .ps-wave-bg {
+            /* Update z-index to be above game background but below content */
+            z-index: -1 !important;
+            /* Increase the opacity to ensure it's visible over the dynamic background */
+            opacity: 0.6 !important;
+        }
+
+        /* Background container styles */
+        #background-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -999; /* Position between game-bg-overlay (-2) and content */
+            overflow: hidden;
+        }
+
+        /* Video background styles */
+        #video-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* YouTube iframe background styles */
+        #youtube-background {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 100vw;
+            height: 56.25vw; /* 16:9 aspect ratio */
+            min-height: 100vh;
+            min-width: 177.78vh; /* 16:9 aspect ratio */
+            transform: translate(-50%, -50%);
+            pointer-events: none; /* Prevent interaction with the video */
+        }
+
+        /* Fullscreen loading overlay */
+        .fullscreen-loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease;
+        }
+
+            .fullscreen-loading-overlay .ps-spinner {
+                display: block;
+                position: relative;
+                top: auto;
+                left: auto;
+                margin: 0 0 30px 0;
+            }
+
+            .fullscreen-loading-overlay .loading-text {
+                color: var(--ps-bright-blue);
+                font-size: 1.2rem;
+                text-align: center;
+            }
+
+        /* Refresh button styling */
+        .control-button#refresh-button::before {
+            content: "↻";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 24px;
+        }
+
+        /* Settings button styling */
+        .control-button#settings-button::before {
+            content: "⚙";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 20px;
+        }
+
+        /* Error message styling - modified to preserve control button access */
+        .error-message-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 100; /* Lower z-index so control buttons stay above */
+            color: white;
+            text-align: center;
+            padding: 2rem;
+            /* Add padding-top to make space for control buttons */
+            padding-top: 100px;
+        }
+
+        .error-message {
+            font-size: 1.5rem;
+            margin-bottom: 2rem;
+            max-width: 80%;
+        }
+
+        .error-icon {
+            font-size: 3rem;
+            color: var(--ps-bright-blue);
+            margin-bottom: 1rem;
+        }
+
+        /* Metacritic section styling */
+        .ps-metacritic-section {
+            margin: 1.5rem 0;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+            .ps-metacritic-section h3 {
+                font-size: 1.2rem;
+                margin-bottom: 1rem;
+                font-weight: 500;
+                color: var(--ps-bright-blue);
+                /* Add text shadow for better visibility */
+                text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+            }
+
+        .ps-metacritic-scores {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            /* Add subtle background for better readability */
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 0.5rem;
+        }
+
+        .ps-metacritic-score {
+            min-width: 120px;
+            text-align: center;
+        }
+
+        .ps-metacritic-label {
+            font-size: 0.8rem;
+            opacity: 0.8;
+            margin-bottom: 0.3rem;
+        }
+
+        .ps-metacritic-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            /* Make the values more visible */
+            color: var(--text);
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            display: inline-block;
+        }
+
+        .score-green {
+            background: rgba(0, 128, 0, 0.3);
+            color: #90ee90 !important;
+        }
+
+        .score-orange {
+            background: rgba(255, 165, 0, 0.3);
+            color: #ffd700 !important;
+        }
+
+        .score-red {
+            background: rgba(255, 0, 0, 0.3);
+            color: #ff6347 !important;
+        }
+
+        .ps-metacritic-loading {
+            font-style: italic;
+            opacity: 0.8;
+            font-size: 0.9rem;
+            padding: 1rem;
+        }
+
+        /* Game stats container - Ultra compact layout */
+        .ps-game-stats-container {
+            display: flex;
+            gap: 0.5rem;
+            margin: 0;
+            padding: 0;
+            border-bottom: none;
+            min-height: auto;
+        }
+
+        /* HowLongToBeat section - Single line compact layout */
+        .ps-hltb-section {
+            flex: 1;
+            margin: 0;
+            padding: 0.5rem;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 0.4rem;
+            display: flex;
+            flex-direction: column;
+            min-height: auto;
+        }
+
+        /* Metacritic section - Single line compact layout */
+        .ps-metacritic-section {
+            flex: 1;
+            margin: 0;
+            padding: 0.5rem;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 0.4rem;
+            display: flex;
+            flex-direction: column;
+            min-height: auto;
+        }
+
+            /* Ultra compact section headings */
+            .ps-hltb-section h3,
+            .ps-metacritic-section h3 {
+                font-size: 0.8rem;
+                margin-bottom: 0.3rem;
+                text-align: center;
+                font-weight: 500;
+            }
+
+        /* Single line data containers */
+        .ps-hltb-times,
+        .ps-metacritic-scores {
+            gap: 0.3rem;
+            padding: 0;
+            background: none;
+            border-radius: 0;
+            flex: 1;
+            display: flex;
+            flex-direction: row;
+            justify-content: space-around;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        /* Ultra compact times/scores */
+        .ps-hltb-time,
+        .ps-metacritic-score {
+            min-width: auto;
+            text-align: center;
+            margin: 0;
+            flex: 1;
+        }
+
+        .ps-hltb-label,
+        .ps-metacritic-label {
+            font-size: 0.65rem;
+            margin-bottom: 0.1rem;
+            opacity: 0.8;
+        }
+
+        .ps-hltb-value {
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .ps-metacritic-value {
+            font-size: 0.9rem;
+            font-weight: 600;
+            padding: 0.2rem 0.4rem;
+            border-radius: 0.3rem;
+        }
+
+        /* Ultra compact loading indicators */
+        .ps-hltb-loading,
+        .ps-metacritic-loading {
+            width: 100%;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            padding: 0.3rem;
+        }
+
+        /* Settings dialog styling */
+        #settings-dialog {
+            min-width: 350px;
+            padding: 2rem;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            margin: 0;
+            background: rgba(64, 64, 64, 0.95);
+            border: 1px solid rgba(128, 128, 128, 0.3);
+        }
+
+            #settings-dialog h2 {
+                margin-bottom: 1.5rem;
+                color: #e0e0e0;
+                font-size: 1.5rem;
+            }
+
+        .settings-content {
+            margin-bottom: 2rem;
+        }
+
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+            .setting-item:last-child {
+                border-bottom: none;
+            }
+
+            .setting-item label {
+                font-size: 1rem;
+                color: var(--text);
+            }
+
+        /* Toggle switch styling */
+        .toggle-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toggle-status {
+            font-size: 0.9rem;
+            color: var(--text);
+            min-width: 30px;
+            text-align: right;
+        }
+
+        .toggle-input {
+            display: none;
+        }
+
+        .toggle-label {
+            display: block;
+            width: 60px;
+            height: 30px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            position: relative;
+        }
+
+        .toggle-slider {
+            display: block;
+            width: 26px;
+            height: 26px;
+            background-color: #fff;
+            border-radius: 50%;
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.3s ease;
+        }
+
+        .toggle-input:checked + .toggle-label {
+            background-color: #4CAF50;
+        }
+
+            .toggle-input:checked + .toggle-label .toggle-slider {
+                transform: translateX(30px);
+            }
+
+        /* Conditional focus indicators - only show when opened with gamepad/keyboard */
+        #settings-dialog.gamepad-focus .toggle-label:focus {
+            outline: 2px solid #4CAF50;
+            outline-offset: 2px;
+        }
+
+        #settings-dialog.gamepad-focus .dialog-buttons button:focus {
+            outline: 2px solid #4CAF50;
+            outline-offset: 2px;
+        }
+
+        /* Hide focus indicators when not using gamepad/keyboard */
+        #settings-dialog:not(.gamepad-focus) .toggle-label:focus,
+        #settings-dialog:not(.gamepad-focus) .dialog-buttons button:focus {
+            outline: none;
+        }
+
+        .dialog-buttons {
+            text-align: right;
+        }
+
+            .dialog-buttons button {
+                margin-left: 0.5rem;
+                outline: none;
+            }
+
+                .dialog-buttons button:focus {
+                    box-shadow: 0 0 0 2px #4CAF50;
+                }
+
+        /* Confirmation dialog styling */
+        #myui-confirm-dialog {
+            min-width: 400px;
+            padding: 2rem;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            margin: 0;
+            background: rgba(64, 64, 64, 0.95);
+            border: 1px solid rgba(128, 128, 128, 0.3);
+        }
+
+            #myui-confirm-dialog h2 {
+                margin-bottom: 1rem;
+                color: #e0e0e0;
+                font-size: 1.5rem;
+            }
+
+            #myui-confirm-dialog p {
+                margin-bottom: 2rem;
+                color: var(--text);
+                font-size: 1.1rem;
+                line-height: 1.4;
+            }
+
+            /* Conditional focus indicators for confirmation dialog */
+            #myui-confirm-dialog.gamepad-focus .dialog-buttons button:focus {
+                outline: 2px solid #4CAF50;
+                outline-offset: 2px;
+            }
+
+            /* Hide focus indicators when not using gamepad/keyboard */
+            #myui-confirm-dialog:not(.gamepad-focus) .dialog-buttons button:focus {
+                outline: none;
+            }
+
+            /* Confirmation dialog button styling - grey like settings */
+            #myui-confirm-dialog .dialog-buttons button {
+                background: #666666 !important;
+                color: var(--text);
+            }
+
+                #myui-confirm-dialog .dialog-buttons button:hover {
+                    background: #777777 !important;
+                    transform: translateY(-2px);
+                }
+
+        /* UI hiding/showing animations for inactivity */
+        .ui-element {
+            opacity: 1;
+            transition: opacity 0.5s ease-in-out;
+        }
+
+            .ui-element.hidden {
+                opacity: 0;
+            }
+
+        /* Apply ui-element class to control buttons and main content */
+        .control-buttons.ui-element.hidden {
+            pointer-events: none;
+        }
+
+        .ps-main.ui-element.hidden {
+            pointer-events: none;
+        }
+
+        /* Battery indicator styling */
+        .battery-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 1100;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 8px 12px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: #ffffff;
+            font-family: 'SST', 'Segoe UI', system-ui, -apple-system, sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .battery-icon {
+            width: 24px;
+            height: 12px;
+            border: 2px solid #ffffff;
+            border-radius: 2px;
+            position: relative;
+            background: transparent;
+            transition: all 0.3s ease;
+        }
+
+            .battery-icon::after {
+                content: '';
+                position: absolute;
+                top: 2px;
+                right: -6px;
+                width: 4px;
+                height: 4px;
+                background: #ffffff;
+                border-radius: 0 2px 2px 0;
+                transition: all 0.3s ease;
+            }
+
+        .battery-fill {
+            position: absolute;
+            top: 1px;
+            left: 1px;
+            height: 6px;
+            background: #4CAF50;
+            border-radius: 1px;
+            transition: all 0.3s ease;
+            min-width: 2px;
+        }
+
+            /* Battery level color coding */
+            .battery-fill.high {
+                background: #4CAF50; /* Green */
+            }
+
+            .battery-fill.medium {
+                background: #FFC107; /* Orange */
+            }
+
+            .battery-fill.low {
+                background: #F44336; /* Red */
+            }
+
+            .battery-fill.critical {
+                background: #D32F2F; /* Dark Red */
+                animation: batteryPulse 1s infinite alternate;
+            }
+
+        @keyframes batteryPulse {
+            from {
+                opacity: 1;
+            }
+
+            to {
+                opacity: 0.3;
+            }
+        }
+
+        /* Charging animation */
+        .battery-indicator.charging .battery-fill {
+            animation: batteryCharging 2s infinite linear;
+        }
+
+        @keyframes batteryCharging {
+            0% {
+                background-position: 0 0;
+            }
+
+            100% {
+                background-position: 20px 0;
+            }
+        }
+
+        .battery-indicator.charging .battery-fill {
+            background: linear-gradient(90deg, #4CAF50 0%, #66BB6A 25%, #4CAF50 50%, #66BB6A 75%, #4CAF50 100% );
+            background-size: 20px 100%;
+        }
+
+        /* Battery percentage text */
+        .battery-percentage {
+            color: #ffffff;
+            font-weight: 600;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Hide battery indicator when not supported */
+        .battery-indicator.unsupported {
+            display: none;
+        }
+
+        /* Hover effect */
+        .battery-indicator:hover {
+            background: rgba(0, 0, 0, 0.7);
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+    <!-- Fullscreen loading overlay -->
+    <div class="fullscreen-loading-overlay" id="fullscreen-loading">
+        <div class="ps-spinner"></div>
+        <div class="loading-text">Loading background...</div>
+    </div>
+
+    <!-- Video background container -->
+    <div id="background-container"></div>
+    <div class="ps-wave-bg"></div>
+    <!-- Add PS5 style gradient overlay -->
+    <div class="ps5-gradient-overlay"></div>
+
+    <!-- Control buttons moved to left side like Xbox360 UI -->
+    <div class="control-buttons ui-element">
+        <button class="control-button" id="refresh-button" title="Refresh"></button>
+        <button class="control-button" id="minimize-button" title="Minimize"></button>
+        <button class="control-button" id="close-button" title="Close"></button>
+        <button class="control-button" id="settings-button" title="Settings"></button>
+    </div>
+
+    <!-- Search container -->
+    <div class="search-container ui-element">
+        <div style="position: relative; width: 100%;">
+            <input type="text" class="search-input" id="search-input" placeholder="Search games..." autocomplete="off">
+            <button class="search-clear" id="search-clear" title="Clear search">✕</button>
+            <span class="search-icon">🔍</span>
+        </div>
+    </div>
+
+    <!-- Battery indicator in top right corner -->
+    <div class="battery-indicator ui-element" id="battery-indicator">
+        <div class="battery-icon">
+            <div class="battery-fill" id="battery-fill"></div>
+        </div>
+        <span class="battery-percentage" id="battery-percentage">--</span>
+    </div>
+
+    <div class="ps-main ui-element">
+        <div class="ps-category">
+            <!-- Removed "Games" title -->
+            <div class="ps-games-carousel-container">
+                <div class="ps-games-row" id="ps-games-row">
+                    <!-- Games will be populated here -->
+                </div>
+            </div>
+        </div>
+
+        <div class="ps-game-details" id="ps-game-details">
+            <div class="ps-game-info">
+                <!-- Game header with title and store on same line -->
+                <div class="ps-game-header">
+                    <h2 id="selected-game-title"></h2>
+                    <div class="ps-store-badge" id="selected-game-store"></div>
+                </div>
+
+                <!-- Ultra compact stats container with side-by-side sections -->
+                <div class="ps-game-stats-container">
+                    <!-- HowLongToBeat section -->
+                    <div class="ps-hltb-section" id="ps-hltb-section">
+                        <div class="ps-hltb-loading">Loading...</div>
+                    </div>
+                    <!-- Metacritic section -->
+                    <div class="ps-metacritic-section" id="ps-metacritic-section">
+                        <div class="ps-metacritic-loading">Loading...</div>
+                    </div>
+                </div>
+
+                <!-- Launch button at the bottom -->
+                <div class="ps-game-actions">
+                    <button class="ps-launch-btn" id="launch-game-btn">Launch Game</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="ps-spinner" id="loading-spinner"></div>
+
+    <dialog id="confirm-dialog">
+        <p id="confirm-message"></p>
+        <button id="confirm-yes">Yes</button>
+        <button id="confirm-no">No</button>
+    </dialog>
+
+    <dialog id="alert-dialog">
+        <p id="alert-message"></p>
+        <button id="alert-ok">OK</button>
+    </dialog>
+
+    <dialog id="settings-dialog">
+        <h2>Settings</h2>
+        <div class="settings-content">
+            <div class="setting-item" id="hide-on-inactivity-setting-item">
+                <label for="hide-on-inactivity-toggle">Hide games on inactivity</label>
+                <div class="toggle-container">
+                    <span class="toggle-status" id="hide-on-inactivity-status">Off</span>
+                    <input type="checkbox" id="hide-on-inactivity-toggle" class="toggle-input">
+                    <label for="hide-on-inactivity-toggle" class="toggle-label" tabindex="0" id="hide-on-inactivity-toggle-label">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+            <div class="setting-item" id="hide-battery-indicator-setting-item">
+                <label for="hide-battery-indicator-toggle">Hide battery indicator</label>
+                <div class="toggle-container">
+                    <span class="toggle-status" id="hide-battery-indicator-status">Off</span>
+                    <input type="checkbox" id="hide-battery-indicator-toggle" class="toggle-input">
+                    <label for="hide-battery-indicator-toggle" class="toggle-label" tabindex="0" id="hide-battery-indicator-toggle-label">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+            <div class="setting-item" id="myui-setting-item">
+                <label for="myui-toggle">MYUI</label>
+                <div class="toggle-container">
+                    <span class="toggle-status" id="myui-status">Off</span>
+                    <input type="checkbox" id="myui-toggle" class="toggle-input">
+                    <label for="myui-toggle" class="toggle-label" tabindex="0" id="myui-toggle-label">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+        <div class="dialog-buttons">
+            <button id="settings-close" tabindex="0">Close</button>
+        </div>
+    </dialog>
+
+    <dialog id="myui-confirm-dialog">
+        <h2>Exit MYUI Mode?</h2>
+        <p>This will switch OGL back to normal mode.</p>
+        <div class="dialog-buttons">
+            <button id="myui-confirm-yes" tabindex="0">Exit MYUI</button>
+            <button id="myui-confirm-no" tabindex="0">Stay in MYUI</button>
+        </div>
+    </dialog>
+
+    <div class="bg-loading" id="bg-loading-indicator">Loading background...</div>
+
+    <div class="launching-overlay" id="launching-overlay">
+        <div class="ps-spinner"></div>
+        <div class="launching-text">Starting game...</div>
+    </div>
+
+    <!-- Add error message container -->
+    <div class="error-message-container" id="error-container" style="display: none;">
+        <div class="error-icon">⚠️</div>
+        <div class="error-message" id="error-message"></div>
+        <div>Please click the refresh button or press F5 to reload.</div>
+    </div>
+
+    <!-- Add audio elements for UI sounds -->
+    <audio id="sound-nav" preload="auto">
+        <source src="https://ogl.app/myui/ps/ps-nav.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="sound-select" preload="auto">
+        <source src="https://ogl.app/myui/ps/ps-select.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="sound-back" preload="auto">
+        <source src="https://ogl.app/myui/ps/ps-back.mp3" type="audio/mpeg">
+    </audio>
+
+    <script>
+        let isLaunchingGame = false;
+        let currentIndex = 0;
+        let lastActiveGameIndex = 0; // Store the last active game index separately
+        let gamesToShow = [];
+        let allGames = []; // Store all games for search filtering
+        let currentBackgroundLayer = 1; // Track which background layer is active
+        let preloadedImages = {}; // Object to track preloaded image status
+        let preloadQueue = []; // Queue for background preloading
+        let backgroundUpdateTimeout = null; // Add this global variable
+        let isDetailsOpen = false; // Track if details are open
+        let isInControlButtons = false; // Track if focus is on control buttons
+        let searchQuery = ''; // Current search query
+        let soundEnabled = true; // Sound is enabled by default
+        let lastSoundTime = 0; // Track the last time a sound was played to avoid rapid repetition
+        const soundDebounceTime = 50; // Minimum time between sounds in ms
+        let isCustomBgActive = hasCustomBackground(); // Track if a custom background is active via URL parameter
+        let initialBackgroundLoaded = false; // Track if the initial background has loaded
+        let firstGameBackground = null; // Store URL of the first game's background
+        let gameBackgroundCache = {}; // Cache for already fetched backgrounds
+        let lastFetchedGameTitle = null;
+        let backgroundTransitionInProgress = false;
+        let hltbCache = {}; // Cache for HowLongToBeat data
+        let metacriticCache = {}; // Cache for Metacritic scores
+        let isSettingsDialogOpen = false; // Track if settings dialog is open
+        let previousFocusElement = null; // Remember what was focused before opening dialog
+        let settingsDialogFocusIndex = 0; // Track which element is focused in settings dialog
+        let settingsDialogOpenedWithGamepad = false; // Track if dialog was opened with gamepad/keyboard
+        const settingsDialogElements = ['hide-on-inactivity-toggle-label', 'hide-battery-indicator-toggle-label', 'myui-toggle-label', 'settings-close']; // Focusable elements in settings dialog
+
+        // Confirmation dialog variables
+        let isConfirmDialogOpen = false; // Track if confirmation dialog is open
+        let confirmDialogFocusIndex = 0; // Track which element is focused in confirmation dialog
+        let confirmDialogOpenedWithGamepad = false; // Track if dialog was opened with gamepad/keyboard
+        const confirmDialogElements = ['myui-confirm-yes', 'myui-confirm-no']; // Focusable elements in confirmation dialog
+        let pendingToggleValue = null; // Store the pending toggle value while waiting for confirmation
+
+        // Inactivity hiding functionality
+        let inactivityTimer = null;
+        let isUIHidden = false;
+        let hideOnInactivityEnabled = false;
+        const INACTIVITY_TIMEOUT = 5000; // 5 seconds
+
+        // Global touch/swipe variables (declared here to be accessible across functions)
+        let isTouchSwiping = false;
+        let touchStartTime = 0;
+
+        // Function to get URL parameters
+        function getUrlParameter(name) {
+            const params = new URLSearchParams(window.location.search);
+            return params.get(name) || '';
+        }
+
+        // Function to check if custom background is provided
+        function hasCustomBackground() {
+            const bgParam = getUrlParameter('bg');
+            return bgParam !== '';
+        }
+
+        // Function to get the API base URL with configurable port
+        function getApiBaseUrl() {
+            const port = getUrlParameter('port') || '54321';
+            return `http://localhost:${port}`;
+        }
+
+        // Sound manager function
+        function playSound(type) {
+            if (!soundEnabled) return;
+
+            const currentTime = Date.now();
+            // Prevent sounds from playing too rapidly
+            if (currentTime - lastSoundTime < soundDebounceTime) return;
+
+            lastSoundTime = currentTime;
+
+            let soundElement;
+            switch (type) {
+                case 'nav':
+                    soundElement = document.getElementById('sound-nav');
+                    break;
+                case 'select':
+                    soundElement = document.getElementById('sound-select');
+                    break;
+                case 'back':
+                    soundElement = document.getElementById('sound-back');
+                    break;
+                default:
+                    soundElement = document.getElementById('sound-nav');
+            }
+
+            if (soundElement) {
+                // Reset sound to beginning if it's already playing
+                soundElement.pause();
+                soundElement.currentTime = 0;
+
+                // Set volume and play
+                soundElement.volume = 0.5; // Adjust volume as needed
+                soundElement.play().catch(error => {
+                    console.warn('Failed to play sound:', error);
+                    // Often this happens due to browser autoplay policies
+                    // We'll just ignore and continue without sound
+                });
+            }
+        }
+
+        // Helper function for fetch with retry capability
+        function fetchWithRetry(url, retries = 1) {
+            return new Promise((resolve, reject) => {
+                fetch(url)
+                    .then(resolve)
+                    .catch(error => {
+                        if (retries <= 0) {
+                            reject(error);
+                            return;
+                        }
+
+                        console.log(`Error fetching ${url}. Retrying...`, error);
+                        fetchWithRetry(url, retries - 1)
+                            .then(resolve)
+                            .catch(reject);
+                    });
+            });
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            const loadingSpinner = document.getElementById('loading-spinner');
+            const fullscreenLoading = document.getElementById('fullscreen-loading');
+
+            loadingSpinner.style.display = 'block';
+
+            const apiEndpoint = `${getApiBaseUrl()}/GetAllGames`;
+
+            fetchWithRetry(apiEndpoint, 1)
+                .then(response => response.json())
+                .then(data => {
+                    loadingSpinner.style.display = 'none';
+                    allGames = data; // Store all games for search
+                    gamesToShow = data; // Initially show all games
+                    renderGames();
+                    updateFocus();
+
+                    // Setup search functionality
+                    setupSearchFunctionality();
+
+                    // Set custom background and check sound settings
+                    // This will handle showing/hiding the loading overlay for custom backgrounds
+                    setCustomBackground();
+
+                    // If no custom background, start loading first game's background
+                    if (!isCustomBgActive && gamesToShow.length > 0) {
+                        setTimeout(() => {
+                            // First game's background loading will be handled in fetchGameBackground
+                            const firstGameTitle = gamesToShow[0].Title;
+                            fetchGameBackground(firstGameTitle, true); // Pass true to indicate this is the initial load
+
+                            // Start preloading other backgrounds after initial loading
+                            setTimeout(() => {
+                                preloadNextBackgrounds(Math.round(currentIndex));
+                            }, 1000);
+                        }, 200);
+                    }
+
+                    // Add event listener for launch button
+                    document.getElementById('launch-game-btn').addEventListener('click', function () {
+                        playSound('select');
+                        launchGame();
+                    });
+                })
+                .catch(error => {
+                    loadingSpinner.style.display = 'none';
+                    fullscreenLoading.style.display = 'none'; // Hide loading overlay on error
+                    console.error('Error fetching games list after retry:', error);
+
+                    // Show inline error message instead of alert
+                    showErrorMessage('Failed to fetch games list. Make sure MYUI is enabled.');
+
+                    // Focus the refresh button
+                    const refreshButton = document.getElementById('refresh-button');
+                    if (refreshButton) {
+                        isInControlButtons = true;
+                        refreshButton.focus();
+                        updateControlButtonsFocus();
+                    }
+                });
+
+            setupControls();
+
+            // Setup refresh button functionality
+            document.getElementById('refresh-button').addEventListener('click', function () {
+                playSound('select');
+                location.reload();
+            });
+
+            // Setup settings button functionality
+            document.getElementById('settings-button').addEventListener('click', function () {
+                playSound('select');
+                openSettingsDialog(false); // false indicates opened with mouse
+            });
+
+            // Setup settings dialog functionality
+            setupSettingsDialog();
+
+            // Setup confirmation dialog functionality
+            setupConfirmationDialog();
+
+            // Setup inactivity hiding functionality
+            setupInactivityHiding();
+        });
+
+        // Search functionality
+        function setupSearchFunctionality() {
+            const searchInput = document.getElementById('search-input');
+            const searchClear = document.getElementById('search-clear');
+
+            // Input event listener for real-time filtering
+            searchInput.addEventListener('input', function(e) {
+                searchQuery = e.target.value.trim();
+                updateSearchClearButton();
+                filterGames(searchQuery);
+            });
+
+            // Clear button functionality
+            searchClear.addEventListener('click', function() {
+                searchInput.value = '';
+                searchQuery = '';
+                updateSearchClearButton();
+                filterGames('');
+                searchInput.focus();
+                playSound('select');
+            });
+
+            // Handle keyboard navigation in search input
+            searchInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    // Clear search and return focus to games
+                    searchInput.value = '';
+                    searchQuery = '';
+                    updateSearchClearButton();
+                    filterGames('');
+                    playSound('back');
+                    
+                    // Focus the currently selected game tile
+                    const gameTiles = document.querySelectorAll('.ps-game-tile');
+                    const selectedIndex = Math.round(currentIndex);
+                    if (gameTiles[selectedIndex]) {
+                        gameTiles[selectedIndex].focus();
+                    }
+                } else if (e.key === 'ArrowDown') {
+                    // Move focus to the first game tile
+                    if (gamesToShow.length > 0) {
+                        playSound('nav');
+                        const gameTiles = document.querySelectorAll('.ps-game-tile');
+                        if (gameTiles[0]) {
+                            gameTiles[0].focus();
+                            currentIndex = 0;
+                            updateFocus();
+                        }
+                    }
+                    e.preventDefault();
+                } else if (e.key === 'Enter') {
+                    // Launch the first game if there's only one result
+                    if (gamesToShow.length === 1) {
+                        playSound('select');
+                        currentIndex = 0;
+                        updateFocus();
+                        selectGame(gamesToShow[0]);
+                    } else if (gamesToShow.length > 0) {
+                        // Focus the first game
+                        playSound('nav');
+                        const gameTiles = document.querySelectorAll('.ps-game-tile');
+                        if (gameTiles[0]) {
+                            gameTiles[0].focus();
+                            currentIndex = 0;
+                            updateFocus();
+                        }
+                    }
+                    e.preventDefault();
+                }
+            });
+        }
+
+        function updateSearchClearButton() {
+            const searchClear = document.getElementById('search-clear');
+            if (searchQuery.length > 0) {
+                searchClear.classList.add('visible');
+            } else {
+                searchClear.classList.remove('visible');
+            }
+        }
+
+        function filterGames(query) {
+            if (!query) {
+                // Show all games when no search query
+                gamesToShow = [...allGames];
+            } else {
+                // Filter games based on title and store
+                const searchTerm = query.toLowerCase();
+                gamesToShow = allGames.filter(game =>
+                    game.Title.toLowerCase().includes(searchTerm) ||
+                    game.Store.toLowerCase().includes(searchTerm)
+                );
+            }
+
+            // Reset current index if it's beyond the filtered results
+            if (currentIndex >= gamesToShow.length) {
+                currentIndex = Math.max(0, gamesToShow.length - 1);
+            }
+
+            // Re-render the games with filtered results
+            renderGames();
+            updateFocus();
+
+            // Close game details if they were open
+            if (isDetailsOpen) {
+                hideGameDetails();
+            }
+        }
+
+        // Helper function to make sure game tiles are focusable
+        function makeTilesFocusable() {
+            const gameTiles = document.querySelectorAll('.ps-game-tile');
+            gameTiles.forEach(tile => {
+                tile.setAttribute('tabindex', '0');
+            });
+        }
+
+        // Updated control button functions to match Xbox360 UI
+        function updateControlButtonsFocus() {
+            const buttons = document.querySelectorAll('.control-button');
+            const activeElement = document.activeElement;
+
+            console.log("Updating control buttons focus. Active element:",
+                activeElement ? activeElement.id || activeElement.tagName : 'none');
+
+            // First, remove focused class from all buttons
+            buttons.forEach(button => {
+                button.classList.remove('focused');
+            });
+
+            // If we're in the control buttons area, focus appropriate button
+            if (isInControlButtons) {
+                // If a specific button already has focus, highlight it
+                if (activeElement && activeElement.classList.contains('control-button')) {
+                    activeElement.classList.add('focused');
+                }
+                // Otherwise default to the first button
+                else {
+                    const firstButton = document.getElementById('minimize-button');
+                    firstButton.classList.add('focused');
+                    firstButton.focus();
+                    console.log("Focus set to minimize button as default");
+                }
+            }
+        }
+
+        function handleControlButtonAction(buttonId) {
+            // Play button sound
+            playSound('select');
+
+            if (buttonId === 'refresh-button') {
+                // Handle refresh button action
+                location.reload();
+                return;
+            }
+
+            if (buttonId === 'close-button') {
+                window.chrome.webview.postMessage({ action: 'close' });
+                return;
+            }
+
+            if (buttonId === 'minimize-button') {
+                window.chrome.webview.postMessage({ action: 'minimize' });
+                return;
+            }
+
+            if (buttonId === 'settings-button') {
+                openSettingsDialog(true); // true indicates opened with gamepad/keyboard
+                return;
+            }
+        }
+
+        function returnToCarousel() {
+            // Play navigation sound
+            playSound('nav');
+
+            // Ensure we reset control buttons state
+            isInControlButtons = false;
+            document.activeElement.blur();
+
+            const buttons = document.querySelectorAll('.control-button');
+            buttons.forEach(button => {
+                button.classList.remove('focused');
+            });
+
+            // When returning to carousel, focus the active game tile
+            const gameTiles = document.querySelectorAll('.ps-game-tile');
+            const selectedIndex = Math.round(currentIndex);
+            if (gameTiles[selectedIndex]) {
+                // Make sure the tile is focusable
+                gameTiles[selectedIndex].setAttribute('tabindex', '0');
+                gameTiles[selectedIndex].focus();
+            }
+
+            // Update focus for visual styling
+            updateFocus();
+        }
+
+        function renderGames() {
+            const gamesRow = document.getElementById('ps-games-row');
+            gamesRow.innerHTML = '';
+
+            gamesToShow.forEach((game, index) => {
+                const tile = document.createElement('div');
+                tile.className = 'ps-game-tile';
+                tile.title = game.Title;
+                tile.setAttribute('data-index', index);
+
+                tile.innerHTML = `
+                            <div class="ps-game-tile-background" style="background-image: url('${game.CoverArtUrl}')"></div>
+                            <div class="ps-fallback-tile" style="display: none;">
+                                <div class="game-title">${game.Title}</div>
+                            </div>
+                            <div class="ps-game-tile-overlay">
+                                <div class="ps-game-title">${game.Title}</div>
+                                <div class="ps-store-name">${game.Store}</div>
+                            </div>
+                            <div class="ps-focus-indicator"></div>
+                        `;
+
+                const backgroundImg = tile.querySelector('.ps-game-tile-background');
+                const fallbackTile = tile.querySelector('.ps-fallback-tile');
+
+                // Handle image loading errors
+                const img = new Image();
+                img.onload = () => {
+                    backgroundImg.style.backgroundImage = `url('${game.CoverArtUrl}')`;
+                    fallbackTile.style.display = 'none';
+                };
+                img.onerror = () => {
+                    backgroundImg.style.backgroundImage = 'none';
+                    fallbackTile.style.display = 'flex';
+                };
+                img.src = game.CoverArtUrl;
+
+                // Handle mouse click
+                tile.addEventListener('click', (e) => {
+                    // Prevent click if this was part of a swipe gesture
+                    if (isTouchSwiping) {
+                        e.preventDefault();
+                        return;
+                    }
+
+                    currentIndex = index; // Update currentIndex to clicked tile
+                    updateFocus();        // Update visual focus and background
+                    playSound('select');  // Add sound feedback
+                    selectGame(game);     // Existing behavior to select game
+                });
+
+                // Add dedicated touch event handling for game tiles
+                let tileTouchStartX = 0;
+                let tileTouchStartY = 0;
+                let tileTouchStartTime = 0;
+                let tileTouchMoved = false;
+
+                tile.addEventListener('touchstart', (e) => {
+                    const touch = e.touches[0];
+                    tileTouchStartX = touch.clientX;
+                    tileTouchStartY = touch.clientY;
+                    tileTouchStartTime = Date.now();
+                    tileTouchMoved = false;
+                    console.log('Game tile touch start:', game.Title);
+                }, { passive: true });
+
+                tile.addEventListener('touchmove', (e) => {
+                    if (e.touches.length > 0) {
+                        const touch = e.touches[0];
+                        const deltaX = Math.abs(touch.clientX - tileTouchStartX);
+                        const deltaY = Math.abs(touch.clientY - tileTouchStartY);
+
+                        // Mark as moved if finger moves more than 10px
+                        if (deltaX > 10 || deltaY > 10) {
+                            tileTouchMoved = true;
+                        }
+                    }
+                }, { passive: true });
+
+                tile.addEventListener('touchend', (e) => {
+                    const touchDuration = Date.now() - tileTouchStartTime;
+                    const touch = e.changedTouches[0];
+                    const deltaX = Math.abs(touch.clientX - tileTouchStartX);
+                    const deltaY = Math.abs(touch.clientY - tileTouchStartY);
+
+                    console.log('Game tile touch end:', game.Title, 'moved:', tileTouchMoved, 'duration:', touchDuration, 'delta:', deltaX, deltaY);
+
+                    // Only trigger if it's a quick tap without much movement
+                    if (!tileTouchMoved && touchDuration < 500 && deltaX < 15 && deltaY < 15) {
+                        console.log('Game tile tap detected, selecting game:', game.Title);
+                        currentIndex = index; // Update currentIndex to tapped tile
+                        updateFocus();        // Update visual focus and background
+                        playSound('select');  // Add sound feedback
+                        selectGame(game);     // Select the game
+                        e.preventDefault();   // Prevent any default behavior
+                    }
+                }, { passive: false });
+
+                gamesRow.appendChild(tile);
+            });
+
+            // After rendering, make tiles focusable and dispatch event
+            makeTilesFocusable();
+        }
+
+        // Modified updateFocus function with improved background handling
+        function updateFocus() {
+            const gameTiles = document.querySelectorAll('.ps-game-tile');
+            const gamesRow = document.getElementById('ps-games-row');
+            const carouselContainer = document.querySelector('.ps-games-carousel-container');
+
+            // If there are no games, exit early
+            if (gameTiles.length === 0) return;
+
+            // Update active class for visual focus
+            gameTiles.forEach((tile, index) => {
+                if (index === Math.round(currentIndex)) {
+                    tile.classList.add('active');
+
+                    // Store the current game index as last active
+                    lastActiveGameIndex = Math.round(currentIndex);
+
+                    // Debounce background update - only if custom background is not active
+                    if (backgroundUpdateTimeout) {
+                        clearTimeout(backgroundUpdateTimeout);
+                    }
+                    if (!isCustomBgActive) {
+                        backgroundUpdateTimeout = setTimeout(() => {
+                            const gameTitle = gamesToShow[index].Title;
+                            // Only fetch background for the currently selected game
+                            fetchGameBackground(gameTitle);
+
+                            // Preload adjacent backgrounds without displaying them
+                            setTimeout(() => {
+                                preloadNextBackgrounds(index);
+                            }, 500);
+                        }, 200); // 200ms debounce delay
+                    } else {
+                        console.log('Skipping background update - custom background is active');
+                    }
+                } else {
+                    tile.classList.remove('active');
+                }
+            });
+
+            // Get precise measurements
+            const firstTile = gameTiles[0];
+            const tileWidth = firstTile.offsetWidth;
+            const margin = parseInt(window.getComputedStyle(firstTile).marginRight);
+
+            // Get the container's width and padding
+            const containerWidth = carouselContainer.clientWidth;
+            const containerPadding = {
+                left: parseInt(window.getComputedStyle(carouselContainer).paddingLeft) || 0,
+                right: parseInt(window.getComputedStyle(carouselContainer).paddingRight) || 0
+            };
+
+            // Usable width (visible area)
+            const visibleWidth = containerWidth - containerPadding.left - containerPadding.right;
+
+            // Calculate how many items can be visible at once
+            const itemsPerView = Math.floor(visibleWidth / (tileWidth + margin));
+
+            // PS5 style - fixed focus position - normally the second item
+            let focusPosition = 1; // 0-based index where focus should be (1 = second item)
+
+            const activeIndex = Math.round(currentIndex);
+            const totalItems = gameTiles.length;
+
+            // Special handling for the first item - adjust focus position
+            if (activeIndex === 0) {
+                focusPosition = 0; // If first item is focused, make it the first visible position
+            }
+
+            // Special handling for the last few items - ensure they're fully visible
+            const lastItemsThreshold = 3; // Consider the last 3 items as needing special handling
+            if (totalItems > itemsPerView && activeIndex >= totalItems - lastItemsThreshold) {
+                // For the last few items, shift the focus position further right
+                // This ensures the last items are positioned with enough space on the right
+                const extraOffset = 1 + (activeIndex - (totalItems - lastItemsThreshold));
+                focusPosition = Math.min(itemsPerView - extraOffset, focusPosition);
+            }
+
+            // Calculate scroll position to place the active item at the focus position
+            let scrollPosition = (tileWidth + margin) * (activeIndex - focusPosition);
+
+            // Calculate total row width
+            const totalRowWidth = (tileWidth + margin) * gameTiles.length - margin; // Subtract last margin
+
+            // Consider the scaling factor for the focused tile (scale 1.15)
+            const scaleFactorPct = 15; // 15% larger when focused (scale 1.15)
+            const scaleOffset = tileWidth * (scaleFactorPct / 100);
+
+            // Add extra padding at the end of the row to ensure the last item has room to scale
+            // This is especially important for the last item
+            if (activeIndex === totalItems - 1) {
+                // Add extra space on the right to ensure the scaled item is fully visible
+                scrollPosition = Math.min(scrollPosition, totalRowWidth - visibleWidth + scaleOffset * 2);
+            }
+
+            // Ensure we don't scroll before the start
+            scrollPosition = Math.max(0, scrollPosition);
+
+            // Ensure we don't scroll past the end
+            const maxScroll = Math.max(0, totalRowWidth - visibleWidth + containerPadding.left);
+            scrollPosition = Math.min(scrollPosition, maxScroll);
+
+            // Apply transform for smooth scrolling
+            gamesRow.style.transform = `translateX(-${scrollPosition}px)`;
+        }
+
+        function setupControls() {
+            let keysPressed = new Set();
+            let animationFrameId = null;
+            let keyHoldStartTime = 0;
+            const holdThreshold = 200;
+            const scrollSpeed = 0.1;
+            let lastButtonPressTime = 0;
+            const debounceTime = 200;
+            let isPageScrolling = false;
+            let keyScrollTargetIndex = 0;
+            const itemsToScroll = 4;
+            const pageScrollSpeed = 0.3;
+
+            // Touch/swipe variables
+            let touchStartX = 0;
+            let touchStartY = 0;
+            let touchStartTime = 0;
+            let touchMoveX = 0;
+            let touchMoveY = 0;
+            let isTouchSwiping = false;
+            let swipeVelocity = 0;
+            let swipeInertiaActive = false;
+            let swipeAnimationId = null;
+            let lastTouchX = 0;
+            let lastTouchTime = 0;
+            let touchSamples = []; // For velocity calculation
+            const maxTouchSamples = 5;
+            const swipeThreshold = 50; // Minimum distance for swipe
+            const swipeVelocityThreshold = 0.5; // Minimum velocity for swipe
+            const inertiaFriction = 0.95; // Friction for inertia animation
+            const minInertiaVelocity = 0.01; // Minimum velocity to continue inertia
+
+            // Setup control buttons functionality
+            document.getElementById('close-button').addEventListener('click', (e) => {
+                handleControlButtonAction('close-button');
+            });
+
+            document.getElementById('minimize-button').addEventListener('click', (e) => {
+                handleControlButtonAction('minimize-button');
+            });
+
+            // Mouse wheel navigation
+            document.addEventListener('wheel', (event) => {
+                if (isLaunchingGame) return;
+
+                const gameTiles = document.querySelectorAll('.ps-game-tile');
+                if (event.deltaY > 0) {
+                    currentIndex = Math.min(Math.round(currentIndex + 1), gameTiles.length - 1);
+                    playSound('nav'); // Add sound for wheel navigation
+                } else {
+                    currentIndex = Math.max(Math.round(currentIndex - 1), 0);
+                    playSound('nav'); // Add sound for wheel navigation
+                }
+                updateFocus();
+            });
+
+            function updateCarousel() {
+                const currentTime = Date.now();
+                const isHolding = currentTime - keyHoldStartTime > holdThreshold;
+                const gameTiles = document.querySelectorAll('.ps-game-tile');
+
+                if (isPageScrolling) {
+                    const diff = keyScrollTargetIndex - currentIndex;
+                    if (Math.abs(diff) > 0.01) {
+                        currentIndex += diff * pageScrollSpeed;
+                    } else {
+                        currentIndex = keyScrollTargetIndex;
+                        isPageScrolling = false;
+                    }
+                } else if (keysPressed.has('ArrowLeft')) {
+                    if (isHolding) {
+                        currentIndex = Math.max(currentIndex - scrollSpeed, 0);
+                    }
+                } else if (keysPressed.has('ArrowRight')) {
+                    if (isHolding) {
+                        currentIndex = Math.min(currentIndex + scrollSpeed, gameTiles.length - 1);
+                    }
+                }
+
+                updateFocus();
+
+                if (keysPressed.size > 0 || isPageScrolling) {
+                    animationFrameId = requestAnimationFrame(updateCarousel);
+                } else {
+                    cancelAnimationFrame(animationFrameId);
+                    animationFrameId = null;
+                }
+            }
+
+            document.addEventListener('keydown', (event) => {
+                if (isLaunchingGame) return;
+
+                const currentTime = Date.now();
+                const gameTiles = document.querySelectorAll('.ps-game-tile');
+                const selectedIndex = Math.round(currentIndex);
+                const activeElement = document.activeElement;
+
+                console.log('Key down event:', event.key); // Add logging to help debug
+
+                // Handle confirmation dialog navigation first
+                if (isConfirmDialogOpen) {
+                    handleConfirmDialogNavigation(event);
+                    return;
+                }
+
+                // Handle settings dialog navigation
+                if (isSettingsDialogOpen) {
+                    handleSettingsDialogNavigation(event);
+                    return;
+                }
+
+                // Check the current focus state
+                const isFocusOnControlButtons = isInControlButtons || (activeElement && activeElement.classList.contains('control-button'));
+
+                // Auto-focus search bar when user starts typing (any printable character except space)
+                const searchInput = document.getElementById('search-input');
+                const isTyping = event.key.length === 1 && /\S/.test(event.key) && event.key !== ' ';
+                const isSearchFocused = activeElement && activeElement.id === 'search-input';
+                
+                if (isTyping && !isSearchFocused && !isSettingsDialogOpen && !isConfirmDialogOpen && !isFocusOnControlButtons) {
+                    // Focus search input and let the character be typed there
+                    searchInput.focus();
+                    searchInput.value += event.key;
+                    searchQuery = searchInput.value;
+                    updateSearchClearButton();
+                    filterGames(searchQuery);
+                    event.preventDefault();
+                    return;
+                }
+                const isFocusOnLaunchButton = activeElement && activeElement.id === 'launch-game-btn';
+                const isFocusOnGameTile = activeElement && activeElement.classList.contains('ps-game-tile');
+
+                // Handle injected PageUp/PageDown events for shoulder buttons (RB/LB)
+                if ((event.key === 'PageUp' || event.key === 'PageDown') &&
+                    currentTime - lastButtonPressTime > debounceTime) {
+
+                    lastButtonPressTime = currentTime;
+                    playSound('nav');
+
+                    // Calculate how many items to jump
+                    const jumpCount = 5; // Jump 5 items at a time
+                    let newIndex;
+
+                    if (event.key === 'PageUp') { // Right shoulder - forward
+                        newIndex = Math.min(Math.round(currentIndex) + jumpCount, gameTiles.length - 1);
+                    } else { // Left shoulder - backward
+                        newIndex = Math.max(Math.round(currentIndex) - jumpCount, 0);
+                    }
+
+                    // If details are open, update selection immediately
+                    if (isDetailsOpen && newIndex >= 0 && newIndex < gamesToShow.length) {
+                        currentIndex = newIndex;
+                        updateFocus();
+                        selectGame(gamesToShow[newIndex]);
+                        document.getElementById('launch-game-btn').focus();
+                    }
+                    // Otherwise animate the scrolling like shoulder buttons do
+                    else if (!isDetailsOpen && !isInControlButtons) {
+                        // Initiate smooth scrolling to the target
+                        isPageScrolling = true;
+                        keyScrollTargetIndex = newIndex;
+                        currentIndex = Math.round(currentIndex); // Start from nearest integer
+                        if (animationFrameId === null) {
+                            animationFrameId = requestAnimationFrame(updateCarousel);
+                        }
+                    }
+
+                    event.preventDefault();
+                    return;
+                }
+
+                // Special case for ArrowLeft/ArrowRight (injected from DPad) when details are open
+                if ((event.key === 'ArrowLeft' || event.key === 'ArrowRight') && isDetailsOpen) {
+                    // Determine new index based on direction
+                    const direction = event.key === 'ArrowLeft' ? -1 : 1;
+                    const newIndex = Math.max(0, Math.min(Math.round(currentIndex) + direction, gameTiles.length - 1));
+
+                    console.log(`DPad navigation with details open: ${currentIndex} -> ${newIndex}`);
+                    currentIndex = newIndex;
+
+                    // Play navigation sound
+                    playSound('nav');
+
+                    // Update the UI
+                    updateFocus();
+                    selectGame(gamesToShow[newIndex]);
+                    document.getElementById('launch-game-btn').focus();
+
+                    event.preventDefault();
+                    return;
+                }
+
+                // Handle control buttons navigation with Left/Right keys
+                if (isFocusOnControlButtons &&
+                    (event.key === 'ArrowLeft' || event.key === 'GamepadLeft' ||
+                        event.key === 'ArrowRight' || event.key === 'GamepadRight')) {
+
+                    // Play navigation sound
+                    playSound('nav');
+
+                    const buttons = document.querySelectorAll('.control-button');
+                    const currentButtonIndex = Array.from(buttons).indexOf(document.activeElement);
+                    let nextButtonIndex;
+
+                    // Determine which button to focus based on direction
+                    if (event.key === 'ArrowLeft' || event.key === 'GamepadLeft') {
+                        nextButtonIndex = (currentButtonIndex - 1 + buttons.length) % buttons.length;
+                        console.log("Control navigation: LEFT to index", nextButtonIndex);
+                    } else {
+                        nextButtonIndex = (currentButtonIndex + 1) % buttons.length;
+                        console.log("Control navigation: RIGHT to index", nextButtonIndex);
+                    }
+
+                    // Set focus on the next button
+                    buttons[nextButtonIndex].focus();
+                    updateControlButtonsFocus();
+                    event.preventDefault();
+                    return;
+                }
+
+                // Handle DOWN key - add GamepadDown support
+                if (event.key === 'ArrowDown' || event.key === 'GamepadDown') {
+                    lastButtonPressTime = currentTime;
+
+                    // From control buttons -> go to carousel only (never open details)
+                    if (isFocusOnControlButtons) {
+                        playSound('nav');
+                        returnToCarousel();
+                        event.preventDefault();
+                        return;
+                    }
+
+                    // From launch button -> do nothing
+                    if (isFocusOnLaunchButton) {
+                        event.preventDefault();
+                        return;
+                    }
+
+                    // From carousel or game tile -> open details
+                    // Check both state variable and focus to determine context
+                    if ((!isDetailsOpen || isFocusOnGameTile) && !isFocusOnControlButtons) {
+                        console.log('Opening game details from carousel');
+                        playSound('select');
+
+                        // Ensure we have a valid selection
+                        if (gameTiles[selectedIndex]) {
+                            // Use selectGame directly instead of click to avoid potential issues
+                            selectGame(gamesToShow[selectedIndex]);
+                            isDetailsOpen = true;
+                            document.getElementById('launch-game-btn').focus();
+                        }
+                        event.preventDefault();
+                        return;
+                    }
+                }
+
+                // Handle UP key - add GamepadUp support
+                else if (event.key === 'ArrowUp' || event.key === 'GamepadUp') {
+                    lastButtonPressTime = currentTime;
+
+                    // From launch button -> close details
+                    if (isFocusOnLaunchButton && isDetailsOpen) {
+                        playSound('back');
+                        hideGameDetails();
+                        event.preventDefault();
+                        return;
+                    }
+
+                    // From carousel -> go directly to control buttons (only if details are not open)
+                    if (!isDetailsOpen && !isFocusOnControlButtons) {
+                        playSound('nav');
+                        isInControlButtons = true;
+                        document.getElementById('minimize-button').focus();
+                        updateControlButtonsFocus();
+                        event.preventDefault();
+                        return;
+                    }
+                }
+
+                // Handle special case for search input focus -> control buttons navigation
+                else if ((event.key === 'ArrowUp' || event.key === 'GamepadUp') &&
+                    activeElement && activeElement.id === 'search-input') {
+                    playSound('nav');
+                    isInControlButtons = true;
+                    document.getElementById('minimize-button').focus();
+                    updateControlButtonsFocus();
+                    event.preventDefault();
+                    return;
+                }
+
+                // Handle left/right navigation - modified to work with details section open
+                else if ((event.key === 'ArrowLeft' || event.key === 'GamepadLeft') &&
+                    !keysPressed.has(event.key) &&
+                    !isFocusOnControlButtons &&
+                    currentTime - lastButtonPressTime > debounceTime) {
+
+                    lastButtonPressTime = currentTime;
+                    const newIndex = Math.max(Math.round(currentIndex) - 1, 0);
+
+                    // Only play sound if actually moving (not at beginning)
+                    if (newIndex !== Math.round(currentIndex)) {
+                        playSound('nav');
+                    }
+
+                    currentIndex = newIndex;
+
+                    // Update game details if they're open
+                    if (isDetailsOpen && newIndex >= 0 && newIndex < gamesToShow.length) {
+                        updateFocus();
+                        selectGame(gamesToShow[newIndex]);
+                        document.getElementById('launch-game-btn').focus();
+                    } else {
+                        updateFocus();
+                    }
+
+                    keysPressed.add(event.key);
+                    keyHoldStartTime = Date.now();
+
+                    if (animationFrameId === null && !isDetailsOpen) {
+                        animationFrameId = requestAnimationFrame(updateCarousel);
+                    }
+
+                    event.preventDefault();
+                }
+                else if ((event.key === 'ArrowRight' || event.key === 'GamepadRight') &&
+                    !keysPressed.has(event.key) &&
+                    !isFocusOnControlButtons &&
+                    currentTime - lastButtonPressTime > debounceTime) {
+
+                    lastButtonPressTime = currentTime;
+                    const newIndex = Math.min(Math.round(currentIndex) + 1, gameTiles.length - 1);
+
+                    // Only play sound if actually moving (not at end)
+                    if (newIndex !== Math.round(currentIndex)) {
+                        playSound('nav');
+                    }
+
+                    currentIndex = newIndex;
+
+                    // Update game details if they're open
+                    if (isDetailsOpen && newIndex >= 0 && newIndex < gamesToShow.length) {
+                        updateFocus();
+                        selectGame(gamesToShow[newIndex]);
+                        document.getElementById('launch-game-btn').focus();
+                    } else {
+                        updateFocus();
+                    }
+
+                    keysPressed.add(event.key);
+                    keyHoldStartTime = Date.now();
+
+                    if (animationFrameId === null && !isDetailsOpen) {
+                        animationFrameId = requestAnimationFrame(updateCarousel);
+                    }
+
+                    event.preventDefault();
+                }
+                // Handle Enter/GamepadA to directly launch the game - modified to work in both contexts
+                else if (event.key === 'Enter' || event.key === 'GamepadA') {
+                    // Handle control button actions when focused
+                    if (isFocusOnControlButtons) {
+                        // Play selection sound
+                        playSound('select');
+
+                        // Get the currently focused control button
+                        const activeButton = document.activeElement;
+                        if (activeButton && activeButton.classList.contains('control-button')) {
+                            // Execute the appropriate action for the button
+                            handleControlButtonAction(activeButton.id);
+                        }
+                        event.preventDefault();
+                        return;
+                    }
+
+                    // If details are open and launch button is focused, launch the game
+                    if (isDetailsOpen && isFocusOnLaunchButton) {
+                        playSound('select');
+                        launchGame();
+                        event.preventDefault();
+                        return;
+                    }
+                    // If we're in the carousel view (not in details), launch the game directly
+                    else if (!isDetailsOpen) {
+                        playSound('select');
+                        launchGame();
+                        event.preventDefault();
+                        return;
+                    }
+                }
+
+                // Handle Escape/GamepadB to close details or exit control buttons
+                else if ((event.key === 'Escape' || event.key === 'GamepadB') && isDetailsOpen) {
+                    playSound('back');
+                    hideGameDetails();
+                    event.preventDefault();
+                    return;
+                }
+                // Handle Escape/GamepadB to exit control buttons
+                else if ((event.key === 'Escape' || event.key === 'GamepadB') && isFocusOnControlButtons) {
+                    playSound('back');
+                    returnToCarousel();
+                    event.preventDefault();
+                    return;
+                }
+            });
+
+            document.addEventListener('keyup', (event) => {
+                keysPressed.delete(event.key);
+            });
+
+            // Setup touch controls for swipe functionality
+            setupTouchControls();
+
+            function setupTouchControls() {
+                const carouselContainer = document.querySelector('.ps-games-carousel-container');
+                const gamesRow = document.getElementById('ps-games-row');
+
+                if (!carouselContainer) {
+                    console.error('Carousel container not found for touch controls');
+                    return;
+                }
+
+                console.log('Setting up touch controls on carousel container');
+
+                // Touch start event
+                carouselContainer.addEventListener('touchstart', (event) => {
+                    console.log('Touch start detected', event.touches.length);
+                    if (isLaunchingGame || isSettingsDialogOpen || isConfirmDialogOpen) {
+                        console.log('Touch start blocked - dialog open or game launching');
+                        return;
+                    }
+
+                    const touch = event.touches[0];
+                    touchStartX = touch.clientX;
+                    touchStartY = touch.clientY;
+                    touchStartTime = Date.now();
+                    lastTouchX = touch.clientX;
+                    lastTouchTime = Date.now();
+                    isTouchSwiping = false;
+                    touchSamples = [];
+
+                    console.log('Touch start at:', touchStartX, touchStartY);
+
+                    // Stop any existing inertia animation
+                    if (swipeAnimationId) {
+                        cancelAnimationFrame(swipeAnimationId);
+                        swipeAnimationId = null;
+                    }
+                    swipeInertiaActive = false;
+
+                    // Add touch sample
+                    touchSamples.push({
+                        x: touch.clientX,
+                        time: Date.now()
+                    });
+
+                    event.preventDefault(); // Prevent default touch behavior
+                }, { passive: false });
+
+                // Touch move event
+                carouselContainer.addEventListener('touchmove', (event) => {
+                    if (isLaunchingGame || isSettingsDialogOpen || isConfirmDialogOpen) return;
+
+                    const touch = event.touches[0];
+                    touchMoveX = touch.clientX;
+                    touchMoveY = touch.clientY;
+
+                    const deltaX = touchMoveX - touchStartX;
+                    const deltaY = touchMoveY - touchStartY;
+                    const currentTime = Date.now();
+
+                    // Determine if this is a horizontal swipe
+                    if (!isTouchSwiping && (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10)) {
+                        isTouchSwiping = Math.abs(deltaX) > Math.abs(deltaY);
+                        console.log('Swipe detected:', isTouchSwiping ? 'horizontal' : 'vertical', 'deltaX:', deltaX, 'deltaY:', deltaY);
+                    }
+
+                    if (isTouchSwiping) {
+                        // Add touch sample for velocity calculation
+                        touchSamples.push({
+                            x: touch.clientX,
+                            time: currentTime
+                        });
+
+                        // Keep only recent samples
+                        if (touchSamples.length > maxTouchSamples) {
+                            touchSamples.shift();
+                        }
+
+                        // Calculate movement and update carousel position
+                        const movementDelta = touch.clientX - lastTouchX;
+                        const gameTiles = document.querySelectorAll('.ps-game-tile');
+                        if (gameTiles.length > 0) {
+                            // Convert pixel movement to index movement
+                            const tileWidth = gameTiles[0].offsetWidth;
+                            const margin = parseInt(window.getComputedStyle(gameTiles[0]).marginRight) || 0;
+                            const indexDelta = -movementDelta / (tileWidth + margin);
+
+                            // Update current index with bounds checking
+                            const newIndex = Math.max(0, Math.min(currentIndex + indexDelta, gameTiles.length - 1));
+                            const oldIndex = currentIndex;
+                            currentIndex = newIndex;
+
+                            if (Math.abs(newIndex - oldIndex) > 0.01) {
+                                console.log('Carousel position updated:', oldIndex.toFixed(2), '->', newIndex.toFixed(2));
+                                updateFocus();
+                            }
+                        }
+
+                        lastTouchX = touch.clientX;
+                        lastTouchTime = currentTime;
+
+                        event.preventDefault(); // Prevent scrolling
+                    }
+                }, { passive: false });
+
+                // Touch end event
+                carouselContainer.addEventListener('touchend', (event) => {
+                    console.log('Touch end detected');
+                    if (isLaunchingGame || isSettingsDialogOpen || isConfirmDialogOpen) return;
+
+                    const currentTime = Date.now();
+                    const touchDuration = currentTime - touchStartTime;
+                    const deltaX = touchMoveX - touchStartX;
+                    const deltaY = touchMoveY - touchStartY;
+                    const distance = Math.abs(deltaX);
+
+                    console.log('Touch end - duration:', touchDuration, 'distance:', distance, 'isSwiping:', isTouchSwiping);
+
+                    if (isTouchSwiping && touchSamples.length >= 2) {
+                        // Calculate velocity from recent samples
+                        const recentSamples = touchSamples.slice(-3); // Use last 3 samples
+                        let totalVelocity = 0;
+                        let velocityCount = 0;
+
+                        for (let i = 1; i < recentSamples.length; i++) {
+                            const timeDiff = recentSamples[i].time - recentSamples[i - 1].time;
+                            const distDiff = recentSamples[i].x - recentSamples[i - 1].x;
+                            if (timeDiff > 0) {
+                                totalVelocity += distDiff / timeDiff;
+                                velocityCount++;
+                            }
+                        }
+
+                        swipeVelocity = velocityCount > 0 ? totalVelocity / velocityCount : 0;
+                        console.log('Calculated swipe velocity:', swipeVelocity);
+
+                        // Apply swipe direction sound
+                        if (Math.abs(swipeVelocity) > swipeVelocityThreshold) {
+                            playSound('nav');
+                        }
+
+                        // Start inertia animation if velocity is significant
+                        if (Math.abs(swipeVelocity) > swipeVelocityThreshold) {
+                            console.log('Starting inertia animation');
+                            swipeInertiaActive = true;
+                            startSwipeInertia();
+                        } else {
+                            // Snap to nearest game if no significant velocity
+                            console.log('Snapping to nearest game');
+                            currentIndex = Math.round(currentIndex);
+                            updateFocus();
+                        }
+                    } else if (!isTouchSwiping && distance < 10 && touchDuration < 300) {
+                        // Handle tap/click on game tiles
+                        console.log('Handling touch tap');
+                        handleTouchTap(event.changedTouches[0]);
+                    } else if (distance < swipeThreshold) {
+                        // Snap back to current position if movement was too small
+                        console.log('Movement too small, snapping back');
+                        currentIndex = Math.round(currentIndex);
+                        updateFocus();
+                    }
+
+                    // Reset touch variables
+                    touchStartX = 0;
+                    touchStartY = 0;
+                    touchMoveX = 0;
+                    touchMoveY = 0;
+                    isTouchSwiping = false;
+                    touchSamples = [];
+                }, { passive: false });
+
+                // Handle touch tap on game tiles
+                function handleTouchTap(touch) {
+                    const element = document.elementFromPoint(touch.clientX, touch.clientY);
+                    if (!element) return;
+
+                    // Find the game tile
+                    let gameTile = element.closest('.ps-game-tile');
+                    if (gameTile) {
+                        const tileIndex = parseInt(gameTile.getAttribute('data-index'));
+                        if (tileIndex >= 0 && tileIndex < gamesToShow.length) {
+                            // Update focus to tapped tile
+                            currentIndex = tileIndex;
+                            updateFocus();
+
+                            // Select the game (show details)
+                            playSound('select');
+                            selectGame(gamesToShow[tileIndex]);
+
+                            // Focus the launch button after a short delay
+                            setTimeout(() => {
+                                const launchButton = document.getElementById('launch-game-btn');
+                                if (launchButton) {
+                                    launchButton.focus();
+                                }
+                            }, 100);
+                        }
+                    }
+                }
+
+                // Inertia animation function
+                function startSwipeInertia() {
+                    if (!swipeInertiaActive || Math.abs(swipeVelocity) < minInertiaVelocity) {
+                        swipeInertiaActive = false;
+                        currentIndex = Math.round(currentIndex);
+                        updateFocus();
+                        return;
+                    }
+
+                    const gameTiles = document.querySelectorAll('.ps-game-tile');
+                    if (gameTiles.length > 0) {
+                        // Convert velocity to index movement
+                        const tileWidth = gameTiles[0].offsetWidth;
+                        const margin = parseInt(window.getComputedStyle(gameTiles[0]).marginRight) || 0;
+                        const indexVelocity = -swipeVelocity / (tileWidth + margin);
+
+                        // Update position
+                        const newIndex = Math.max(0, Math.min(currentIndex + indexVelocity, gameTiles.length - 1));
+                        currentIndex = newIndex;
+                        updateFocus();
+
+                        // Apply friction
+                        swipeVelocity *= inertiaFriction;
+
+                        // Continue animation
+                        swipeAnimationId = requestAnimationFrame(startSwipeInertia);
+                    }
+                }
+            }
+        }
+
+        function selectGame(game) {
+            const gameDetails = document.getElementById('ps-game-details');
+            const gameTitle = document.getElementById('selected-game-title');
+            const gameStore = document.getElementById('selected-game-store');
+
+            // Update game info (no cover art in compact design)
+            gameTitle.textContent = game.Title;
+            gameStore.textContent = game.Store;
+
+            // Clear and show loading state for HowLongToBeat section
+            const hltbSection = document.getElementById('ps-hltb-section');
+            hltbSection.innerHTML = '<div class="ps-hltb-loading">Loading game data...</div>';
+
+            // Clear and show loading state for Metacritic section
+            const metacriticSection = document.getElementById('ps-metacritic-section');
+            metacriticSection.innerHTML = '<div class="ps-metacritic-loading">Loading Metacritic scores...</div>';
+
+            // Fetch data for both sections
+            fetchHowLongToBeat(game.Title);
+            fetchMetacriticInfo(game.Title);
+
+            gameDetails.classList.add('visible');
+            isDetailsOpen = true; // Make sure we set this flag
+
+            // Auto-focus the Launch button
+            setTimeout(() => {
+                const launchButton = document.getElementById('launch-game-btn');
+                if (launchButton) {
+                    launchButton.focus();
+                    console.log('Focus set on Launch button');
+                }
+            }, 10);
+        }
+
+        // New function to fetch HowLongToBeat data
+        function fetchHowLongToBeat(gameTitle) {
+            // Check cache first
+            if (hltbCache[gameTitle]) {
+                console.log(`Using cached HowLongToBeat data for "${gameTitle}"`);
+                updateHowLongToBeat(hltbCache[gameTitle]);
+                return;
+            }
+
+            const apiUrl = `https://cdn.ogl.app/api/HowLongToBeat/Search?title=${encodeURIComponent(gameTitle)}`;
+
+            console.log(`Fetching HowLongToBeat data for "${gameTitle}"`);
+
+            fetch(apiUrl)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`API returned status code ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log(`Received HowLongToBeat data for "${gameTitle}":`, data);
+                    // Store in cache
+                    hltbCache[gameTitle] = data;
+                    // Only update if it's still the current game
+                    const currentGameTitle = gamesToShow[Math.round(currentIndex)]?.Title;
+                    if (gameTitle === currentGameTitle) {
+                        updateHowLongToBeat(data);
+                    }
+                })
+                .catch(error => {
+                    console.error(`Error fetching HowLongToBeat data for "${gameTitle}":`, error);
+                    showHltbError();
+                });
+        }
+
+        // Function to format playtime hours
+        function formatPlaytime(hours) {
+            if (!hours || isNaN(hours)) {
+                return 'N/A';
+            }
+
+            const fullHours = Math.floor(hours);
+            const minutes = Math.round((hours - fullHours) * 60);
+
+            if (minutes === 0) {
+                return `${fullHours}h`;
+            } else {
+                return `${fullHours}h ${minutes}m`;
+            }
+        }
+
+        // Function to update the UI with HowLongToBeat data
+        function updateHowLongToBeat(data) {
+            const hltbSection = document.getElementById('ps-hltb-section');
+
+            if (!hltbSection) {
+                return;
+            }
+
+            // If no data or invalid data
+            if (!data || !data.gameName) {
+                showHltbError();
+                return;
+            }
+
+            // Format times as hours and minutes
+            const mainStory = formatPlaytime(data.compMain);
+            const mainPlusSides = formatPlaytime(data.compPlus);
+            const completionist = formatPlaytime(data.comp100);
+
+            hltbSection.innerHTML = `
+                    <h3>How Long To Beat</h3>
+                    <div class="ps-hltb-times">
+                        <div class="ps-hltb-time">
+                            <div class="ps-hltb-label">Main Story</div>
+                            <div class="ps-hltb-value">${mainStory}</div>
+                        </div>
+                        <div class="ps-hltb-time">
+                            <div class="ps-hltb-label">Main + Sides</div>
+                            <div class="ps-hltb-value">${mainPlusSides}</div>
+                        </div>
+                        <div class="ps-hltb-time">
+                            <div class="ps-hltb-label">Completionist</div>
+                            <div class="ps-hltb-value">${completionist}</div>
+                        </div>
+                    </div>
+                `;
+        }
+
+        // Function to show error when HowLongToBeat data can't be loaded
+        function showHltbError() {
+            const hltbSection = document.getElementById('ps-hltb-section');
+            if (hltbSection) {
+                hltbSection.innerHTML = `
+                        <div class="ps-hltb-loading">
+                            No completion time data available
+                        </div>
+                    `;
+            }
+        }
+
+        // Function to fetch Metacritic scores
+        function fetchMetacriticInfo(gameTitle) {
+            // Check cache first
+            if (metacriticCache[gameTitle]) {
+                console.log(`Using cached Metacritic data for "${gameTitle}"`);
+                updateMetacriticInfo(metacriticCache[gameTitle]);
+                return;
+            }
+
+            const apiUrl = `https://cdn.ogl.app/api/Metacritic/Search?title=${encodeURIComponent(gameTitle)}`;
+
+            console.log(`Fetching Metacritic data for "${gameTitle}"`);
+
+            fetch(apiUrl)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`API returned status code ${response.status}`);
+                    }
+                    return response.text();
+                })
+                .then(data => {
+                    console.log(`Received Metacritic data for "${gameTitle}":`, data);
+
+                    // Parse the data (expected format: "userScore|criticScore")
+                    const splittedResult = data.split('|');
+                    const result = {
+                        userScore: splittedResult[0],
+                        criticScore: splittedResult[1]
+                    };
+
+                    // Store in cache
+                    metacriticCache[gameTitle] = result;
+
+                    // Only update if it's still the current game
+                    const currentGameTitle = gamesToShow[Math.round(currentIndex)]?.Title;
+                    if (gameTitle === currentGameTitle) {
+                        updateMetacriticInfo(result);
+                    }
+                })
+                .catch(error => {
+                    console.error(`Error fetching Metacritic data for "${gameTitle}":`, error);
+                    showMetacriticError();
+                });
+        }
+
+        // Function to update the UI with Metacritic data
+        function updateMetacriticInfo(data) {
+            const metacriticSection = document.getElementById('ps-metacritic-section');
+
+            if (!metacriticSection) {
+                return;
+            }
+
+            // If no data or invalid data
+            if (!data || (!data.userScore && !data.criticScore)) {
+                showMetacriticError();
+                return;
+            }
+
+            // Format scores and determine color classes
+            const userScore = data.userScore || "N/A";
+            const criticScore = data.criticScore || "N/A";
+            const userScoreClass = getScoreColorClass(userScore);
+            const criticScoreClass = getScoreColorClass(criticScore);
+
+            metacriticSection.innerHTML = `
+                    <h3>Metacritic Scores</h3>
+                    <div class="ps-metacritic-scores">
+                        <div class="ps-metacritic-score">
+                            <div class="ps-metacritic-label">User Score</div>
+                            <div class="ps-metacritic-value ${userScoreClass}">${userScore}</div>
+                        </div>
+                        <div class="ps-metacritic-score">
+                            <div class="ps-metacritic-label">Critic Score</div>
+                            <div class="ps-metacritic-value ${criticScoreClass}">${criticScore}</div>
+                        </div>
+                    </div>
+                `;
+        }
+
+        // Function to get appropriate CSS class for score coloring
+        function getScoreColorClass(scoreText) {
+            if (scoreText === "N/A") {
+                return "";
+            }
+
+            const score = parseFloat(scoreText);
+            if (isNaN(score)) {
+                return "";
+            }
+
+            if (score >= 75) {
+                return "score-green";
+            } else if (score >= 50) {
+                return "score-orange";
+            } else {
+                return "score-red";
+            }
+        }
+
+        // Function to show error when Metacritic data can't be loaded
+        function showMetacriticError() {
+            const metacriticSection = document.getElementById('ps-metacritic-section');
+            if (metacriticSection) {
+                metacriticSection.innerHTML = `
+                        <div class="ps-metacritic-loading">
+                            No Metacritic scores available
+                        </div>
+                    `;
+            }
+        }
+
+        function hideGameDetails() {
+            const gameDetails = document.getElementById('ps-game-details');
+            gameDetails.classList.remove('visible');
+            isDetailsOpen = false;
+
+            // Return focus to the active game tile
+            const gameTiles = document.querySelectorAll('.ps-game-tile');
+            const selectedIndex = Math.round(currentIndex);
+
+            // Add a small delay to ensure DOM is updated before focusing
+            setTimeout(() => {
+                if (gameTiles[selectedIndex]) {
+                    // Make sure the tile is focusable
+                    gameTiles[selectedIndex].setAttribute('tabindex', '0');
+                    gameTiles[selectedIndex].focus();
+                    console.log('Focus returned to game tile after closing details');
+                }
+            }, 10);
+        }
+
+        function launchGame() {
+            if (isLaunchingGame) return;
+
+            isLaunchingGame = true;
+            const launchingOverlay = document.getElementById('launching-overlay');
+            launchingOverlay.style.display = 'flex';
+
+            // Get the current selected game
+            const selectedIndex = Math.round(currentIndex);
+            const selectedGame = gamesToShow[selectedIndex];
+
+            if (!selectedGame) {
+                console.error('No game selected for launch');
+                launchingOverlay.style.display = 'none';
+                isLaunchingGame = false;
+                showAlert('Error: No game selected.');
+                return;
+            }
+
+            console.log(`Launching game: ${selectedGame.Title} (ID: ${selectedGame.Id}, Store: ${selectedGame.Store})`);
+
+            // Call the actual launch API - exactly match Xbox360 format
+            const launchEndpoint = `${getApiBaseUrl()}/LaunchGame?Id=${selectedGame.Id}&Store=${selectedGame.Store}`;
+
+            console.log(`Calling endpoint: ${launchEndpoint}`);
+
+            fetch(launchEndpoint)
+                .then(response => {
+                    console.log(`Launch API response status: ${response.status}`);
+                    if (!response.ok) {
+                        throw new Error(`API returned status code ${response.status}`);
+                    }
+                    return response.text();
+                })
+                .then(data => {
+                    console.log('Game launch successful, response:', data);
+
+                    // Wait a moment for the game to start before minimizing/closing
+                    // No success message shown - just minimize/close the window
+                    setTimeout(() => {
+                        console.log('Calling minimize/close endpoint');
+
+                        // Call minimize/close endpoint
+                        window.chrome.webview.postMessage({ action: 'closeOrMinimizeAppWindowAfterGameLaunch' });
+                        setTimeout(() => {
+                            console.log('Window closed or minimized after launch');
+                            // Just log, don't show any UI message
+                        }, 100);
+
+                        // Hide the launching overlay - this just removes the loading UI, doesn't show messages
+                        launchingOverlay.style.display = 'none';
+                        isLaunchingGame = false;
+
+                        // Make sure details panel is hidden as well if it's open
+                        if (isDetailsOpen) {
+                            hideGameDetails();
+                        }
+
+                        // No success alerts or messages - matching Xbox360 behavior
+                    }, 1500);
+                })
+                .catch(error => {
+                    console.error('Error launching game:', error);
+                    launchingOverlay.style.display = 'none';
+                    isLaunchingGame = false;
+                    showAlert(`Failed to launch game: ${error.message}`);
+                });
+        }
+
+        function showAlert(message) {
+            const alertDialog = document.getElementById('alert-dialog');
+            const alertMessage = document.getElementById('alert-message');
+            const alertOkButton = document.getElementById('alert-ok');
+
+            alertMessage.textContent = message;
+            alertDialog.showModal();
+
+            alertOkButton.addEventListener('click', () => {
+                alertDialog.close();
+            });
+        }
+
+        // Main function to fetch game background - prioritizes BackgroundUrl over RAWG API
+        function fetchGameBackground(gameTitle, isInitial = false) {
+            // Skip background fetching if custom background is active
+            if (isCustomBgActive) {
+                return;
+            }
+
+            // Find the game object to check for BackgroundUrl
+            const game = gamesToShow.find(g => g.Title === gameTitle);
+            
+            if (game && game.BackgroundUrl && game.BackgroundUrl.trim() !== '') {
+                // Use local background if BackgroundUrl is defined
+                console.log(`Using local background for ${gameTitle}: ${game.BackgroundUrl}`);
+                fetchLocalBackground(game.BackgroundUrl, gameTitle, isInitial);
+            } else {
+                // Fall back to RAWG API if no BackgroundUrl
+                console.log(`No BackgroundUrl found for ${gameTitle}, using RAWG API`);
+                fetchRawgBackground(gameTitle, isInitial);
+            }
+        }
+
+        // Function to handle games with local BackgroundUrl
+        function fetchLocalBackground(backgroundUrl, gameTitle, isInitial = false) {
+            // Don't refetch for the same game title
+            if (lastFetchedGameTitle === gameTitle && !isInitial) {
+                return;
+            }
+
+            lastFetchedGameTitle = gameTitle;
+
+            // Check if we already have this background in cache
+            if (gameBackgroundCache[gameTitle]) {
+                console.log(`Using cached local background for ${gameTitle}`);
+                setBackgroundImage(gameBackgroundCache[gameTitle], isInitial);
+                return;
+            }
+
+            console.log(`Loading local background for: "${gameTitle}" from ${backgroundUrl}`);
+
+            // Show loading indicator for background
+            const bgLoadingIndicator = document.getElementById('bg-loading-indicator');
+            bgLoadingIndicator.textContent = 'Loading game background...';
+            bgLoadingIndicator.style.display = 'block';
+
+            // Set a timeout to hide the loading indicator if the fetch takes too long
+            const loadingTimeout = setTimeout(() => {
+                console.warn(`Local background loading timeout for: "${gameTitle}"`);
+                bgLoadingIndicator.style.display = 'none';
+
+                // If initial load, hide the fullscreen overlay too
+                if (isInitial && !initialBackgroundLoaded) {
+                    const fullscreenLoading = document.getElementById('fullscreen-loading');
+                    fullscreenLoading.style.opacity = '0';
+                    initialBackgroundLoaded = true;
+
+                    setTimeout(() => {
+                        fullscreenLoading.style.display = 'none';
+                    }, 500);
+                }
+            }, 15000); // 15 second timeout
+
+            // Create image to test if the URL is valid
+            const img = new Image();
+            img.onload = function() {
+                clearTimeout(loadingTimeout);
+                console.log(`Local background loaded successfully for "${gameTitle}"`);
+
+                // Store in cache
+                gameBackgroundCache[gameTitle] = backgroundUrl;
+
+                // For first game background, store the URL
+                if (isInitial || firstGameBackground === null) {
+                    firstGameBackground = backgroundUrl;
+                }
+
+                // Only set background image if this is still the current game
+                const currentGameTitle = gamesToShow[Math.round(currentIndex)]?.Title;
+                if (gameTitle === currentGameTitle || isInitial) {
+                    setBackgroundImage(backgroundUrl, isInitial);
+                } else {
+                    console.log(`Local background loaded but not displayed (game not selected): ${gameTitle}`);
+                }
+            };
+
+            img.onerror = function() {
+                clearTimeout(loadingTimeout);
+                console.error('Failed to load local background image:', backgroundUrl);
+                console.log(`Falling back to RAWG API for: "${gameTitle}"`);
+                
+                // Fall back to RAWG API if local background fails
+                fetchRawgBackground(gameTitle, isInitial);
+            };
+
+            img.src = backgroundUrl;
+        }
+
+        // Updated function to fetch RAWG.io background image with loading handling
+        function fetchRawgBackground(gameTitle, isInitial = false) {
+            // Skip background fetching if custom background is active
+            if (isCustomBgActive) {
+                return;
+            }
+
+            // Don't refetch for the same game title
+            if (lastFetchedGameTitle === gameTitle && !isInitial) {
+                return;
+            }
+
+            lastFetchedGameTitle = gameTitle;
+
+            // Check if we already have this background in cache
+            if (gameBackgroundCache[gameTitle]) {
+                console.log(`Using cached background for ${gameTitle}`);
+                setBackgroundImage(gameBackgroundCache[gameTitle], isInitial);
+                return;
+            }
+
+            // Use encodeURIComponent to properly encode the game title for use in URL
+            const encodedTitle = encodeURIComponent(gameTitle);
+            const apiUrl = `https://cdn.ogl.app/api/Rawg/Search?title=${encodedTitle}`;
+
+            console.log(`Searching RAWG for: "${gameTitle}"`);
+
+            // Show loading indicator for background
+            const bgLoadingIndicator = document.getElementById('bg-loading-indicator');
+            bgLoadingIndicator.textContent = 'Loading game background...';
+            bgLoadingIndicator.style.display = 'block';
+
+            // Set a timeout to hide the loading indicator if the fetch takes too long
+            const loadingTimeout = setTimeout(() => {
+                console.warn(`Background loading timeout for: "${gameTitle}"`);
+                bgLoadingIndicator.style.display = 'none';
+
+                // If initial load, hide the fullscreen overlay too
+                if (isInitial && !initialBackgroundLoaded) {
+                    const fullscreenLoading = document.getElementById('fullscreen-loading');
+                    fullscreenLoading.style.opacity = '0';
+                    initialBackgroundLoaded = true;
+
+                    setTimeout(() => {
+                        fullscreenLoading.style.display = 'none';
+                    }, 500);
+                }
+            }, 15000); // 15 second timeout
+
+            fetch(apiUrl)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`API returned status code ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    clearTimeout(loadingTimeout);
+
+                    // Check if we have results and a background image
+                    if (data.results && data.results.length > 0 && data.results[0].background_image) {
+                        const backgroundImage = data.results[0].background_image;
+                        console.log(`Found background for "${gameTitle}": ${backgroundImage}`);
+
+                        // Store in cache before setting
+                        gameBackgroundCache[gameTitle] = backgroundImage;
+
+                        // For first game background, store the URL
+                        if (isInitial || firstGameBackground === null) {
+                            firstGameBackground = backgroundImage;
+                        }
+
+                        // Only set background image if this is still the current game
+                        // This prevents background flicker when multiple backgrounds load
+                        const currentGameTitle = gamesToShow[Math.round(currentIndex)]?.Title;
+                        if (gameTitle === currentGameTitle || isInitial) {
+                            setBackgroundImage(backgroundImage, isInitial);
+                        } else {
+                            console.log(`Background loaded but not displayed (game not selected): ${gameTitle}`);
+                        }
+                    } else {
+                        console.log(`No background image found for "${gameTitle}"`);
+                        bgLoadingIndicator.style.display = 'none';
+                        clearTimeout(loadingTimeout);
+                        // If this is the initial load, hide the fullscreen loading anyway
+                        if (isInitial) {
+                            const fullscreenLoading = document.getElementById('fullscreen-loading');
+                            fullscreenLoading.style.opacity = '0';
+                            initialBackgroundLoaded = true;
+
+                            setTimeout(() => {
+                                fullscreenLoading.style.display = 'none';
+                            }, 500);
+                        }
+                    }
+                })
+                .catch(error => {
+                    clearTimeout(loadingTimeout);
+                    console.error('Error fetching RAWG background:', error);
+                    bgLoadingIndicator.style.display = 'none';
+
+                    // If this is the initial load, hide the fullscreen loading anyway
+                    if (isInitial) {
+                        const fullscreenLoading = document.getElementById('fullscreen-loading');
+                        fullscreenLoading.style.opacity = '0';
+                        initialBackgroundLoaded = true;
+
+                        setTimeout(() => {
+                            fullscreenLoading.style.display = 'none';
+                        }, 500);
+                    }
+                });
+        }
+
+        // Enhanced background transition function with loading handling
+        function setBackgroundImage(imageUrl, isInitial = false) {
+            if (backgroundTransitionInProgress) {
+                setTimeout(() => setBackgroundImage(imageUrl, isInitial), 100);
+                return;
+            }
+
+            backgroundTransitionInProgress = true;
+            const bgLoadingIndicator = document.getElementById('bg-loading-indicator');
+            const fullscreenLoading = document.getElementById('fullscreen-loading');
+
+            // Set a timeout to hide loading indicators if image loading takes too long
+            const loadingTimeout = setTimeout(() => {
+                console.warn(`Image loading timeout: ${imageUrl}`);
+                bgLoadingIndicator.style.display = 'none';
+                backgroundTransitionInProgress = false;
+
+                // For initial load, ensure the fullscreen overlay is removed
+                if (isInitial && !initialBackgroundLoaded) {
+                    initialBackgroundLoaded = true;
+                    fullscreenLoading.style.opacity = '0';
+
+                    setTimeout(() => {
+                        fullscreenLoading.style.display = 'none';
+                    }, 500);
+                }
+            }, 10000); // 10 second timeout
+
+            // Create a new image to test loading
+            const bgImage = new Image();
+
+            bgImage.onload = function () {
+                clearTimeout(loadingTimeout);
+
+                // Ensure both overlay elements exist
+                ensureBackgroundLayers();
+
+                // Determine which layer is currently visible and which should be the new one
+                const currentLayer = document.getElementById(currentBackgroundLayer === 1 ? 'game-bg-overlay' : 'game-bg-overlay-2');
+                const newLayer = document.getElementById(currentBackgroundLayer === 1 ? 'game-bg-overlay-2' : 'game-bg-overlay');
+
+                // Set the new background on the inactive layer
+                newLayer.style.backgroundImage = `url('${imageUrl}')`;
+
+                // PS5-style crossfade with higher opacity for clearer images
+                setTimeout(() => {
+                    // Fade out current layer
+                    currentLayer.style.opacity = '0';
+                    // Fade in new layer with higher opacity
+                    newLayer.style.opacity = '1'; // Full opacity for clearer background
+
+                    // Switch active layer indicator
+                    currentBackgroundLayer = currentBackgroundLayer === 1 ? 2 : 1;
+
+                    // Hide loading indicators
+                    bgLoadingIndicator.style.display = 'none';
+
+                    // For initial background load, hide the fullscreen loading overlay
+                    if (isInitial && !initialBackgroundLoaded) {
+                        initialBackgroundLoaded = true;
+                        fullscreenLoading.style.opacity = '0';
+
+                        setTimeout(() => {
+                            fullscreenLoading.style.display = 'none';
+                        }, 500);
+                    }
+
+                    // Reset transition flag after animation completes
+                    setTimeout(() => {
+                        backgroundTransitionInProgress = false;
+                    }, 600); // Match transition duration from CSS
+                }, 50);
+            };
+
+            bgImage.onerror = function () {
+                clearTimeout(loadingTimeout);
+                console.error('Failed to load background image:', imageUrl);
+                bgLoadingIndicator.textContent = 'Background image failed to load';
+                bgLoadingIndicator.style.display = 'none'; // Immediately hide the indicator
+                backgroundTransitionInProgress = false;
+
+                // For initial background load, hide the fullscreen loading overlay even on error
+                if (isInitial && !initialBackgroundLoaded) {
+                    initialBackgroundLoaded = true;
+                    fullscreenLoading.style.opacity = '0';
+
+                    setTimeout(() => {
+                        fullscreenLoading.style.display = 'none';
+                    }, 500);
+                }
+            };
+
+            bgImage.src = imageUrl;
+        }
+
+        // Updated custom background function to handle loading failures
+        function setCustomBackground() {
+            // Set background image based on 'bg' URL parameter
+            const bgParam = getUrlParameter('bg');
+            const bgLoadingIndicator = document.getElementById('bg-loading-indicator');
+            const fullscreenLoading = document.getElementById('fullscreen-loading');
+            fullscreenLoading.querySelector('.loading-text').textContent = 'Loading background...';
+
+            if (bgParam) {
+                console.log('Custom background active: Dynamic backgrounds disabled');
+
+                // Show loading indicators
+                bgLoadingIndicator.style.display = 'block';
+                fullscreenLoading.style.display = 'flex'; // Show fullscreen loading overlay
+
+                // Set a timeout to hide loading indicators if loading takes too long
+                const loadingTimeout = setTimeout(() => {
+                    console.warn('Custom background loading timeout');
+                    bgLoadingIndicator.style.display = 'none';
+                    fullscreenLoading.style.opacity = '0';
+                    initialBackgroundLoaded = true;
+
+                    setTimeout(() => {
+                        fullscreenLoading.style.display = 'none';
+                    }, 500);
+                }, 20000); // 20 second timeout
+
+                if (isVideoUrl(bgParam)) {
+                    const backgroundContainer = document.getElementById('background-container');
+
+                    if (isYouTubeUrl(bgParam)) {
+                        // Handle YouTube URLs
+                        const videoId = extractYouTubeVideoId(bgParam);
+                        if (videoId) {
+                            console.log(`Processing YouTube video ID: ${videoId}`);
+
+                            // Create iframe for YouTube embed
+                            const iframeElement = document.createElement('iframe');
+                            iframeElement.id = 'youtube-background';
+                            iframeElement.src = createYouTubeEmbedUrl(videoId);
+                            iframeElement.style.position = 'absolute';
+                            iframeElement.style.top = '50%';
+                            iframeElement.style.left = '50%';
+                            iframeElement.style.width = '100vw';
+                            iframeElement.style.height = '56.25vw';
+                            iframeElement.style.minHeight = '100vh';
+                            iframeElement.style.minWidth = '177.78vh';
+                            iframeElement.style.transform = 'translate(-50%, -50%)';
+                            iframeElement.style.border = 'none';
+                            iframeElement.style.pointerEvents = 'none';
+                            iframeElement.allow = 'autoplay; encrypted-media';
+                            iframeElement.setAttribute('allowfullscreen', '');
+
+                            // Handle iframe loading
+                            iframeElement.onload = function () {
+                                clearTimeout(loadingTimeout);
+                                console.log('YouTube video iframe loaded successfully');
+                                bgLoadingIndicator.style.display = 'none';
+                                fullscreenLoading.style.opacity = '0';
+                                initialBackgroundLoaded = true;
+
+                                setTimeout(() => {
+                                    fullscreenLoading.style.display = 'none';
+                                }, 500);
+                            };
+
+                            iframeElement.onerror = function () {
+                                clearTimeout(loadingTimeout);
+                                console.error('Failed to load YouTube video:', bgParam);
+                                bgLoadingIndicator.textContent = 'YouTube video failed to load';
+                                bgLoadingIndicator.style.display = 'none';
+                                fullscreenLoading.style.opacity = '0';
+                                initialBackgroundLoaded = true;
+
+                                setTimeout(() => {
+                                    fullscreenLoading.style.display = 'none';
+                                }, 500);
+                            };
+
+                            // Add iframe to container
+                            backgroundContainer.appendChild(iframeElement);
+
+                            // Handle loading completion with a timeout since YouTube doesn't always trigger onload
+                            setTimeout(() => {
+                                if (!initialBackgroundLoaded) {
+                                    clearTimeout(loadingTimeout);
+                                    console.log('YouTube video assumed loaded after timeout');
+                                    bgLoadingIndicator.style.display = 'none';
+                                    fullscreenLoading.style.opacity = '0';
+                                    initialBackgroundLoaded = true;
+
+                                    setTimeout(() => {
+                                        fullscreenLoading.style.display = 'none';
+                                    }, 500);
+                                }
+                            }, 3000); // 3 second fallback
+
+                            // Hide other background elements
+                            document.body.style.backgroundImage = 'none';
+                            const waveElement = document.querySelector('.ps-wave-bg');
+                            if (waveElement) waveElement.style.display = 'none';
+
+                            return; // Exit early for YouTube videos
+                        } else {
+                            clearTimeout(loadingTimeout);
+                            console.error('Could not extract video ID from YouTube URL:', bgParam);
+                            bgLoadingIndicator.textContent = 'Invalid YouTube URL';
+                            bgLoadingIndicator.style.display = 'none';
+                            fullscreenLoading.style.opacity = '0';
+                            initialBackgroundLoaded = true;
+
+                            setTimeout(() => {
+                                fullscreenLoading.style.display = 'none';
+                            }, 500);
+                            return; // Exit early for invalid YouTube URLs
+                        }
+                    }
+
+                    // Handle direct video file URLs (.mp4, .webm, .ogg) - Create video element for background
+                    const videoElement = document.createElement('video');
+                    videoElement.id = 'video-background';
+                    videoElement.autoplay = true;
+                    videoElement.loop = true;
+                    videoElement.muted = true;
+                    videoElement.playsInline = true;
+
+                    // Set loading event handlers
+                    videoElement.onloadeddata = function () {
+                        clearTimeout(loadingTimeout);
+                        // Video loaded successfully
+                        bgLoadingIndicator.style.display = 'none';
+                        fullscreenLoading.style.opacity = '0'; // Fade out the overlay
+                        initialBackgroundLoaded = true; // Mark as loaded
+
+                        // Remove the overlay from DOM after fade out
+                        setTimeout(() => {
+                            fullscreenLoading.style.display = 'none';
+                        }, 500);
+                    };
+
+                    videoElement.onerror = function () {
+                        clearTimeout(loadingTimeout);
+                        // Video failed to load
+                        console.error('Failed to load background video:', bgParam);
+                        bgLoadingIndicator.textContent = 'Background video failed to load';
+                        bgLoadingIndicator.style.display = 'none'; // Immediately hide the indicator
+                        fullscreenLoading.style.opacity = '0'; // Fade out the overlay
+                        initialBackgroundLoaded = true;
+
+                        setTimeout(() => {
+                            fullscreenLoading.style.display = 'none';
+                        }, 500);
+                    };
+
+                    // Set video source and add to container
+                    videoElement.src = bgParam;
+                    backgroundContainer.appendChild(videoElement);
+
+                    // Hide other background elements
+                    document.body.style.backgroundImage = 'none';
+                    const waveElement = document.querySelector('.ps-wave-bg');
+                    if (waveElement) waveElement.style.display = 'none';
+                } else {
+                    // For image backgrounds (including WebP)
+                    const backgroundContainer = document.getElementById('background-container');
+
+                    // Create a new image to test loading
+                    const bgImage = new Image();
+                    bgImage.onload = function () {
+                        clearTimeout(loadingTimeout);
+                        // Background loaded successfully
+                        backgroundContainer.style.background = `url('${bgParam}') no-repeat center center`;
+                        backgroundContainer.style.backgroundSize = 'cover';
+
+                        // Hide other background elements
+                        document.body.style.backgroundImage = 'none';
+                        const waveElement = document.querySelector('.ps-wave-bg');
+                        if (waveElement) waveElement.style.display = 'none';
+
+                        bgLoadingIndicator.style.display = 'none';
+                        fullscreenLoading.style.opacity = '0'; // Fade out the overlay
+                        initialBackgroundLoaded = true; // Mark as loaded
+
+                        // Remove the overlay from DOM after fade out
+                        setTimeout(() => {
+                            fullscreenLoading.style.display = 'none';
+                        }, 500);
+                    };
+
+                    bgImage.onerror = function () {
+                        clearTimeout(loadingTimeout);
+                        // Background failed to load
+                        console.error('Failed to load background image:', bgParam);
+                        bgLoadingIndicator.textContent = 'Background image failed to load';
+                        bgLoadingIndicator.style.display = 'none'; // Immediately hide the indicator
+                        fullscreenLoading.style.opacity = '0'; // Fade out the overlay
+                        initialBackgroundLoaded = true;
+
+                        setTimeout(() => {
+                            fullscreenLoading.style.display = 'none';
+                        }, 500);
+                    };
+
+                    // Start loading the image
+                    bgImage.src = bgParam;
+                }
+            } else {
+                // If no custom background, keep the loading overlay visible
+                // It will be hidden after the first game background loads
+                fullscreenLoading.querySelector('.loading-text').textContent = 'Loading backgrounds...';
+            }
+        }
+
+
+        function isVideoUrl(url) {
+            const videoExtensions = ['.mp4', '.webm', '.ogg'];
+            return videoExtensions.some(ext => url.toLowerCase().endsWith(ext)) || isYouTubeUrl(url);
+        }
+
+        function isYouTubeUrl(url) {
+            const youtubePatterns = [
+                /(?:https?:\/\/)?(?:www\.)?youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/,
+                /(?:https?:\/\/)?(?:www\.)?youtu\.be\/([a-zA-Z0-9_-]+)/,
+                /(?:https?:\/\/)?(?:www\.)?youtube\.com\/embed\/([a-zA-Z0-9_-]+)/
+            ];
+            return youtubePatterns.some(pattern => pattern.test(url));
+        }
+
+        function extractYouTubeVideoId(url) {
+            const patterns = [
+                /(?:https?:\/\/)?(?:www\.)?youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/,
+                /(?:https?:\/\/)?(?:www\.)?youtu\.be\/([a-zA-Z0-9_-]+)/,
+                /(?:https?:\/\/)?(?:www\.)?youtube\.com\/embed\/([a-zA-Z0-9_-]+)/
+            ];
+
+            for (const pattern of patterns) {
+                const match = url.match(pattern);
+                if (match) {
+                    return match[1];
+                }
+            }
+            return null;
+        }
+
+        function getOptimalYouTubeQuality() {
+            const width = window.screen.width;
+            const height = window.screen.height;
+            const pixelRatio = window.devicePixelRatio || 1;
+
+            // Calculate effective resolution considering pixel ratio
+            const effectiveWidth = width * pixelRatio;
+            const effectiveHeight = height * pixelRatio;
+
+            console.log(`Screen resolution: ${width}x${height}, Pixel ratio: ${pixelRatio}, Effective: ${effectiveWidth}x${effectiveHeight}`);
+
+            // Determine quality based on effective resolution
+            if (effectiveWidth >= 3840 || effectiveHeight >= 2160) {
+                return 'hd2160'; // 4K
+            } else if (effectiveWidth >= 2560 || effectiveHeight >= 1440) {
+                return 'hd1440'; // 1440p
+            } else if (effectiveWidth >= 1920 || effectiveHeight >= 1080) {
+                return 'hd1080'; // 1080p
+            } else if (effectiveWidth >= 1280 || effectiveHeight >= 720) {
+                return 'hd720'; // 720p
+            } else {
+                return 'large'; // 480p
+            }
+        }
+
+        function createYouTubeEmbedUrl(videoId) {
+            const quality = getOptimalYouTubeQuality();
+            console.log(`Creating YouTube embed for video ID: ${videoId} with quality: ${quality}`);
+
+            // YouTube embed URL with parameters for autoplay, loop, mute, and quality
+            return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&loop=1&playlist=${videoId}&controls=0&showinfo=0&rel=0&iv_load_policy=3&modestbranding=1&playsinline=1&vq=${quality}`;
+        }
+
+        function ensureBackgroundLayers() {
+            if (!document.getElementById('game-bg-overlay')) {
+                const overlay1 = document.createElement('div');
+                overlay1.id = 'game-bg-overlay';
+                document.body.appendChild(overlay1);
+            }
+            if (!document.getElementById('game-bg-overlay-2')) {
+                const overlay2 = document.createElement('div');
+                overlay2.id = 'game-bg-overlay-2';
+                document.body.appendChild(overlay2);
+            }
+        }
+
+        // Updated preload function that only caches backgrounds without displaying them
+        function preloadNextBackgrounds(currentIndex) {
+            // Skip background preloading if custom background is active
+            if (isCustomBgActive) {
+                console.log('Skipping background preload - custom background is active');
+                return;
+            }
+
+            const preloadCount = 3; // Number of backgrounds to preload
+            const startIndex = Math.max(0, currentIndex - preloadCount);
+            const endIndex = Math.min(gamesToShow.length - 1, currentIndex + preloadCount);
+
+            for (let i = startIndex; i <= endIndex; i++) {
+                // Skip the current game since we're already showing its background
+                if (i === Math.round(currentIndex)) {
+                    continue;
+                }
+
+                const gameTitle = gamesToShow[i].Title;
+                if (!preloadedImages[gameTitle] && !gameBackgroundCache[gameTitle]) {
+                    preloadedImages[gameTitle] = true;
+                    preloadBackgroundOnly(gameTitle);
+                }
+            }
+        }
+
+        // New function to preload backgrounds without displaying them - prioritizes BackgroundUrl over RAWG API
+        function preloadBackgroundOnly(gameTitle) {
+            // Skip background fetching if custom background is active
+            if (isCustomBgActive) {
+                console.log('Skipping background preload - custom background is active');
+                return;
+            }
+
+            // Skip if already in cache
+            if (gameBackgroundCache[gameTitle]) {
+                return;
+            }
+
+            // Find the game object to check for BackgroundUrl
+            const game = gamesToShow.find(g => g.Title === gameTitle);
+            
+            if (game && game.BackgroundUrl && game.BackgroundUrl.trim() !== '') {
+                // Use local background if BackgroundUrl is defined
+                console.log(`Preloading local background for ${gameTitle}: ${game.BackgroundUrl}`);
+                preloadLocalBackground(game.BackgroundUrl, gameTitle);
+            } else {
+                // Fall back to RAWG API if no BackgroundUrl
+                console.log(`No BackgroundUrl found for ${gameTitle}, preloading from RAWG API`);
+                preloadRawgBackground(gameTitle);
+            }
+        }
+
+        // Function to preload local backgrounds without displaying them
+        function preloadLocalBackground(backgroundUrl, gameTitle) {
+            console.log(`Preloading local background for: "${gameTitle}" from ${backgroundUrl}`);
+
+            // Create image to test if the URL is valid and cache it
+            const img = new Image();
+            img.onload = function() {
+                console.log(`Local background preloaded successfully for "${gameTitle}"`);
+                // Store in cache
+                gameBackgroundCache[gameTitle] = backgroundUrl;
+            };
+
+            img.onerror = function() {
+                console.error('Failed to preload local background image:', backgroundUrl);
+                console.log(`Falling back to RAWG API preload for: "${gameTitle}"`);
+                // Fall back to RAWG API if local background fails
+                preloadRawgBackground(gameTitle);
+            };
+
+            img.src = backgroundUrl;
+        }
+
+        // Function to preload RAWG backgrounds without displaying them
+        function preloadRawgBackground(gameTitle) {
+            const encodedTitle = encodeURIComponent(gameTitle);
+            const apiUrl = `https://cdn.ogl.app/api/Rawg/Search?title=${encodedTitle}`;
+
+            console.log(`Preloading RAWG background for: "${gameTitle}"`);
+
+            fetch(apiUrl)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`API returned status code ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Cache the background but don't display it
+                    if (data.results && data.results.length > 0 && data.results[0].background_image) {
+                        const backgroundImage = data.results[0].background_image;
+                        console.log(`Cached RAWG background for "${gameTitle}"`);
+
+                        // Store in cache without setting as background
+                        gameBackgroundCache[gameTitle] = backgroundImage;
+
+                        // Preload the image in browser cache
+                        const img = new Image();
+                        img.src = backgroundImage;
+                    } else {
+                        console.log(`No background image found for "${gameTitle}" (RAWG preload)`);
+                    }
+                })
+                .catch(error => {
+                    console.error(`Error preloading RAWG background for "${gameTitle}":`, error);
+                    delete preloadedImages[gameTitle]; // Allow retry later
+                });
+        }
+
+        // Add function to show error message
+        function showErrorMessage(message) {
+            const errorContainer = document.getElementById('error-container');
+            const errorMessage = document.getElementById('error-message');
+
+            if (errorContainer && errorMessage) {
+                errorMessage.textContent = message;
+                errorContainer.style.display = 'flex';
+            }
+        }
+
+        // Settings dialog functionality
+        function setupSettingsDialog() {
+            const settingsDialog = document.getElementById('settings-dialog');
+            const settingsCloseButton = document.getElementById('settings-close');
+            const myuiToggle = document.getElementById('myui-toggle');
+            const myuiToggleLabel = document.getElementById('myui-toggle-label');
+            const myuiSettingItem = document.getElementById('myui-setting-item');
+            const hideOnInactivityToggle = document.getElementById('hide-on-inactivity-toggle');
+            const hideOnInactivityToggleLabel = document.getElementById('hide-on-inactivity-toggle-label');
+            const hideOnInactivitySettingItem = document.getElementById('hide-on-inactivity-setting-item');
+            const hideBatteryIndicatorToggle = document.getElementById('hide-battery-indicator-toggle');
+            const hideBatteryIndicatorToggleLabel = document.getElementById('hide-battery-indicator-toggle-label');
+            const hideBatteryIndicatorSettingItem = document.getElementById('hide-battery-indicator-setting-item');
+
+            // Close button functionality
+            settingsCloseButton.addEventListener('click', function () {
+                playSound('back');
+                closeSettingsDialog();
+            });
+
+            // Toggle change handler - this handles the actual checkbox state changes
+            myuiToggle.addEventListener('change', function () {
+                const newValue = this.checked;
+
+                // If user is turning off MYUI, show confirmation dialog
+                if (!newValue) {
+                    // Revert the toggle state temporarily
+                    this.checked = true;
+                    updateToggleStatus(true);
+
+                    // Store the pending value and show confirmation
+                    pendingToggleValue = newValue;
+                    playSound('select');
+                    showConfirmationDialog(settingsDialogOpenedWithGamepad);
+                } else {
+                    // If turning on, apply immediately
+                    playSound('select');
+                    updateToggleStatus(newValue);
+                    updateMyUiSetting(newValue);
+                }
+            });
+
+            // Toggle label click handler - for mouse clicks on the toggle
+            myuiToggleLabel.addEventListener('click', function (e) {
+                e.preventDefault(); // Prevent default to avoid double triggering
+                playSound('select');
+                myuiToggle.checked = !myuiToggle.checked;
+                // Trigger change event manually
+                const changeEvent = new Event('change', { bubbles: true });
+                myuiToggle.dispatchEvent(changeEvent);
+            });
+
+            // Setting item click handler - for mouse clicks on the setting row
+            myuiSettingItem.addEventListener('click', function (e) {
+                // Only handle clicks on the setting item itself, not its children
+                if (e.target === myuiSettingItem || e.target.tagName === 'LABEL') {
+                    e.preventDefault();
+                    playSound('select');
+                    myuiToggle.checked = !myuiToggle.checked;
+                    // Trigger change event manually
+                    const changeEvent = new Event('change', { bubbles: true });
+                    myuiToggle.dispatchEvent(changeEvent);
+                }
+            });
+
+            // Toggle label keydown handler - for keyboard/gamepad input
+            myuiToggleLabel.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    playSound('select');
+                    myuiToggle.checked = !myuiToggle.checked;
+                    // Trigger change event manually
+                    const changeEvent = new Event('change', { bubbles: true });
+                    myuiToggle.dispatchEvent(changeEvent);
+                }
+            });
+
+            // Hide on inactivity toggle change handler
+            hideOnInactivityToggle.addEventListener('change', function () {
+                const newValue = this.checked;
+                playSound('select');
+                updateHideOnInactivityStatus(newValue);
+                saveHideOnInactivitySetting(newValue);
+                hideOnInactivityEnabled = newValue;
+
+                if (newValue) {
+                    startInactivityTimer();
+                } else {
+                    stopInactivityTimer();
+                    showUI();
+                }
+            });
+
+            // Hide on inactivity toggle label click handler - handle clicks on entire toggle area
+            hideOnInactivityToggleLabel.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                playSound('select');
+                hideOnInactivityToggle.checked = !hideOnInactivityToggle.checked;
+                const changeEvent = new Event('change', { bubbles: true });
+                hideOnInactivityToggle.dispatchEvent(changeEvent);
+            });
+
+            // Hide on inactivity setting item click handler - handle clicks on the toggle container area
+            hideOnInactivitySettingItem.addEventListener('click', function (e) {
+                // Only handle clicks on the toggle container part, not the label text
+                const toggleContainer = e.target.closest('.toggle-container');
+                if (toggleContainer && hideOnInactivitySettingItem.contains(toggleContainer)) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    playSound('select');
+                    hideOnInactivityToggle.checked = !hideOnInactivityToggle.checked;
+                    const changeEvent = new Event('change', { bubbles: true });
+                    hideOnInactivityToggle.dispatchEvent(changeEvent);
+                }
+            });
+
+            // Add click handler specifically to the toggle container for better click area coverage
+            const hideOnInactivityToggleContainer = hideOnInactivitySettingItem.querySelector('.toggle-container');
+            if (hideOnInactivityToggleContainer) {
+                hideOnInactivityToggleContainer.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    playSound('select');
+                    hideOnInactivityToggle.checked = !hideOnInactivityToggle.checked;
+                    const changeEvent = new Event('change', { bubbles: true });
+                    hideOnInactivityToggle.dispatchEvent(changeEvent);
+                });
+            }
+
+            // Hide on inactivity toggle label keydown handler
+            hideOnInactivityToggleLabel.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    playSound('select');
+                    hideOnInactivityToggle.checked = !hideOnInactivityToggle.checked;
+                    const changeEvent = new Event('change', { bubbles: true });
+                    hideOnInactivityToggle.dispatchEvent(changeEvent);
+                }
+            });
+
+            // Close dialog when clicking outside
+            settingsDialog.addEventListener('click', function (e) {
+                if (e.target === settingsDialog) {
+                    playSound('back');
+                    closeSettingsDialog();
+                }
+            });
+
+            // Hide battery indicator toggle change handler
+            hideBatteryIndicatorToggle.addEventListener('change', function () {
+                const newValue = this.checked;
+                playSound('select');
+                updateHideBatteryIndicatorStatus(newValue);
+                saveHideBatteryIndicatorSetting(newValue);
+                hideBatteryIndicatorEnabled = newValue;
+                toggleBatteryIndicatorVisibility(!newValue); // Hide when enabled, show when disabled
+            });
+
+            // Hide battery indicator toggle label click handler
+            hideBatteryIndicatorToggleLabel.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                playSound('select');
+                hideBatteryIndicatorToggle.checked = !hideBatteryIndicatorToggle.checked;
+                const changeEvent = new Event('change', { bubbles: true });
+                hideBatteryIndicatorToggle.dispatchEvent(changeEvent);
+            });
+
+            // Hide battery indicator setting item click handler
+            hideBatteryIndicatorSettingItem.addEventListener('click', function (e) {
+                const toggleContainer = e.target.closest('.toggle-container');
+                if (toggleContainer && hideBatteryIndicatorSettingItem.contains(toggleContainer)) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    playSound('select');
+                    hideBatteryIndicatorToggle.checked = !hideBatteryIndicatorToggle.checked;
+                    const changeEvent = new Event('change', { bubbles: true });
+                    hideBatteryIndicatorToggle.dispatchEvent(changeEvent);
+                }
+            });
+
+            // Add click handler to battery indicator toggle container
+            const hideBatteryIndicatorToggleContainer = hideBatteryIndicatorSettingItem.querySelector('.toggle-container');
+            if (hideBatteryIndicatorToggleContainer) {
+                hideBatteryIndicatorToggleContainer.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    playSound('select');
+                    hideBatteryIndicatorToggle.checked = !hideBatteryIndicatorToggle.checked;
+                    const changeEvent = new Event('change', { bubbles: true });
+                    hideBatteryIndicatorToggle.dispatchEvent(changeEvent);
+                });
+            }
+
+            // Hide battery indicator toggle label keydown handler
+            hideBatteryIndicatorToggleLabel.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    playSound('select');
+                    hideBatteryIndicatorToggle.checked = !hideBatteryIndicatorToggle.checked;
+                    const changeEvent = new Event('change', { bubbles: true });
+                    hideBatteryIndicatorToggle.dispatchEvent(changeEvent);
+                }
+            });
+
+            // Dialog close event handler
+            settingsDialog.addEventListener('close', function () {
+                isSettingsDialogOpen = false;
+                settingsDialogOpenedWithGamepad = false;
+                // Remove gamepad focus class
+                settingsDialog.classList.remove('gamepad-focus');
+
+                // Restore focus to previous element
+                if (previousFocusElement) {
+                    setTimeout(() => {
+                        previousFocusElement.focus();
+                        previousFocusElement = null;
+                    }, 100);
+                }
+            });
+        }
+
+        function openSettingsDialog(openedWithGamepad = false) {
+            const settingsDialog = document.getElementById('settings-dialog');
+            const myuiToggle = document.getElementById('myui-toggle');
+            const hideOnInactivityToggle = document.getElementById('hide-on-inactivity-toggle');
+            const hideBatteryIndicatorToggle = document.getElementById('hide-battery-indicator-toggle');
+
+            // Remember what was focused before opening dialog
+            previousFocusElement = document.activeElement;
+            settingsDialogOpenedWithGamepad = openedWithGamepad;
+
+            // Load current setting values
+            const hideOnInactivityValue = loadHideOnInactivitySetting();
+            hideOnInactivityToggle.checked = hideOnInactivityValue;
+            updateHideOnInactivityStatus(hideOnInactivityValue);
+            hideOnInactivityEnabled = hideOnInactivityValue;
+
+            const hideBatteryIndicatorValue = loadHideBatteryIndicatorSetting();
+            hideBatteryIndicatorToggle.checked = hideBatteryIndicatorValue;
+            updateHideBatteryIndicatorStatus(hideBatteryIndicatorValue);
+            hideBatteryIndicatorEnabled = hideBatteryIndicatorValue;
+
+            loadMyUiSetting().then(isEnabled => {
+                myuiToggle.checked = isEnabled;
+                updateToggleStatus(isEnabled);
+                settingsDialog.showModal();
+                isSettingsDialogOpen = true;
+                settingsDialogFocusIndex = 0;
+
+                // Add gamepad focus class if opened with gamepad/keyboard
+                if (settingsDialogOpenedWithGamepad) {
+                    settingsDialog.classList.add('gamepad-focus');
+
+                    // Focus the first setting (hide on inactivity toggle)
+                    setTimeout(() => {
+                        const firstElement = document.getElementById(settingsDialogElements[0]);
+                        firstElement.focus();
+                    }, 100);
+                }
+            }).catch(error => {
+                console.error('Failed to load settings:', error);
+                // Show dialog anyway with default value
+                myuiToggle.checked = false;
+                updateToggleStatus(false);
+                settingsDialog.showModal();
+                isSettingsDialogOpen = true;
+                settingsDialogFocusIndex = 0;
+
+                // Add gamepad focus class if opened with gamepad/keyboard
+                if (settingsDialogOpenedWithGamepad) {
+                    settingsDialog.classList.add('gamepad-focus');
+
+                    // Focus the first setting (hide on inactivity toggle)
+                    setTimeout(() => {
+                        const firstElement = document.getElementById(settingsDialogElements[0]);
+                        firstElement.focus();
+                    }, 100);
+                }
+            });
+        }
+
+        function closeSettingsDialog() {
+            const settingsDialog = document.getElementById('settings-dialog');
+            settingsDialog.close();
+        }
+
+        function loadMyUiSetting() {
+            const apiUrl = `${getApiBaseUrl()}/Settings/Get/MyUiAsMainPageRegularApp`;
+
+            return fetch(apiUrl)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Loaded MYUI setting:', data.value);
+                    return data.value;
+                })
+                .catch(error => {
+                    console.error('Error loading MYUI setting:', error);
+                    throw error;
+                });
+        }
+
+        function updateMyUiSetting(value) {
+            const apiUrl = `${getApiBaseUrl()}/Settings/Set/MyUiAsMainPageRegularApp?value=${value}`;
+
+            fetch(apiUrl, { method: 'POST' })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Updated MYUI setting:', data);
+                    if (data.success) {
+                        console.log(`MYUI setting successfully updated to: ${data.value}`);
+                    } else {
+                        throw new Error('Update failed');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error updating MYUI setting:', error);
+                    // Revert the toggle state on error
+                    const myuiToggle = document.getElementById('myui-toggle');
+                    myuiToggle.checked = !value;
+                    updateToggleStatus(!value);
+                    showAlert('Failed to update setting. Please try again.');
+                });
+        }
+
+        function updateMyUiSettingWithRestart(value) {
+            const apiUrl = `${getApiBaseUrl()}/Settings/Set/MyUiAsMainPageRegularApp?value=${value}`;
+
+            fetch(apiUrl, { method: 'POST' })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Updated MYUI setting:', data);
+                    if (data.success) {
+                        console.log(`MYUI setting successfully updated to: ${data.value}`);
+                        // Trigger application restart after successful setting update
+                        console.log('Triggering application restart...');
+                        window.chrome.webview.postMessage({ action: 'restart' });
+                    } else {
+                        throw new Error('Update failed');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error updating MYUI setting:', error);
+                    // Revert the toggle state on error
+                    const myuiToggle = document.getElementById('myui-toggle');
+                    myuiToggle.checked = !value;
+                    updateToggleStatus(!value);
+                    showAlert('Failed to update setting. Please try again.');
+                });
+        }
+
+        function updateToggleStatus(isEnabled) {
+            const statusElement = document.getElementById('myui-status');
+            statusElement.textContent = isEnabled ? 'On' : 'Off';
+        }
+
+        function handleSettingsDialogNavigation(event) {
+            const activeElement = document.activeElement;
+
+            // Handle B button / Escape to close dialog
+            if (event.key === 'Escape' || event.key === 'GamepadB') {
+                playSound('back');
+                closeSettingsDialog();
+                event.preventDefault();
+                return;
+            }
+
+            // Handle Enter on hide-on-inactivity toggle label
+            if (event.key === 'Enter' &&
+                activeElement && activeElement.id === 'hide-on-inactivity-toggle-label') {
+                playSound('select');
+                const hideOnInactivityToggle = document.getElementById('hide-on-inactivity-toggle');
+                hideOnInactivityToggle.checked = !hideOnInactivityToggle.checked;
+                // Trigger change event manually
+                const changeEvent = new Event('change', { bubbles: true });
+                hideOnInactivityToggle.dispatchEvent(changeEvent);
+                event.preventDefault();
+                return;
+            }
+
+            // Handle Enter on hide-battery-indicator toggle label
+            if (event.key === 'Enter' &&
+                activeElement && activeElement.id === 'hide-battery-indicator-toggle-label') {
+                playSound('select');
+                const hideBatteryIndicatorToggle = document.getElementById('hide-battery-indicator-toggle');
+                hideBatteryIndicatorToggle.checked = !hideBatteryIndicatorToggle.checked;
+                // Trigger change event manually
+                const changeEvent = new Event('change', { bubbles: true });
+                hideBatteryIndicatorToggle.dispatchEvent(changeEvent);
+                event.preventDefault();
+                return;
+            }
+
+            // Handle Enter on MYUI toggle label
+            if (event.key === 'Enter' &&
+                activeElement && activeElement.id === 'myui-toggle-label') {
+                playSound('select');
+                const myuiToggle = document.getElementById('myui-toggle');
+                myuiToggle.checked = !myuiToggle.checked;
+                // Trigger change event manually
+                const changeEvent = new Event('change', { bubbles: true });
+                myuiToggle.dispatchEvent(changeEvent);
+                event.preventDefault();
+                return;
+            }
+
+            // Handle Enter on Close button
+            if (event.key === 'Enter' &&
+                activeElement && activeElement.id === 'settings-close') {
+                playSound('select');
+                closeSettingsDialog();
+                event.preventDefault();
+                return;
+            }
+
+            // Handle navigation with Up/Down arrows or gamepad D-pad
+            if (event.key === 'ArrowUp' || event.key === 'GamepadUp') {
+                playSound('nav');
+                settingsDialogFocusIndex = Math.max(0, settingsDialogFocusIndex - 1);
+                focusSettingsDialogElement();
+                event.preventDefault();
+                return;
+            }
+
+            if (event.key === 'ArrowDown' || event.key === 'GamepadDown') {
+                playSound('nav');
+                settingsDialogFocusIndex = Math.min(settingsDialogElements.length - 1, settingsDialogFocusIndex + 1);
+                focusSettingsDialogElement();
+                event.preventDefault();
+                return;
+            }
+        }
+
+        function focusSettingsDialogElement() {
+            const elementId = settingsDialogElements[settingsDialogFocusIndex];
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.focus();
+            }
+        }
+
+        // Confirmation dialog functionality
+        function setupConfirmationDialog() {
+            const confirmDialog = document.getElementById('myui-confirm-dialog');
+            const confirmYesButton = document.getElementById('myui-confirm-yes');
+            const confirmNoButton = document.getElementById('myui-confirm-no');
+
+            // Yes button functionality
+            confirmYesButton.addEventListener('click', function () {
+                playSound('select');
+                confirmToggleOff();
+            });
+
+            // No button functionality
+            confirmNoButton.addEventListener('click', function () {
+                playSound('back');
+                cancelToggleOff();
+            });
+
+            // Close dialog when clicking outside
+            confirmDialog.addEventListener('click', function (e) {
+                if (e.target === confirmDialog) {
+                    playSound('back');
+                    cancelToggleOff();
+                }
+            });
+
+            // Dialog close event handler
+            confirmDialog.addEventListener('close', function () {
+                isConfirmDialogOpen = false;
+                confirmDialogOpenedWithGamepad = false;
+                // Remove gamepad focus class
+                confirmDialog.classList.remove('gamepad-focus');
+
+                // Restore focus to toggle if settings dialog is still open
+                if (isSettingsDialogOpen) {
+                    setTimeout(() => {
+                        const toggleLabel = document.getElementById('myui-toggle-label');
+                        if (toggleLabel) {
+                            toggleLabel.focus();
+                        }
+                    }, 100);
+                }
+            });
+        }
+
+        function showConfirmationDialog(openedWithGamepad = false) {
+            const confirmDialog = document.getElementById('myui-confirm-dialog');
+
+            confirmDialogOpenedWithGamepad = openedWithGamepad;
+            isConfirmDialogOpen = true;
+            confirmDialogFocusIndex = 1; // Default to "Stay in MYUI" button
+
+            // Add gamepad focus class if opened with gamepad/keyboard
+            if (confirmDialogOpenedWithGamepad) {
+                confirmDialog.classList.add('gamepad-focus');
+            }
+
+            confirmDialog.showModal();
+
+            // Focus the "Stay in MYUI" button immediately without setTimeout to avoid jumping
+            if (confirmDialogOpenedWithGamepad) {
+                const stayButton = document.getElementById(confirmDialogElements[1]);
+                stayButton.focus();
+            }
+        }
+
+        function confirmToggleOff() {
+            const confirmDialog = document.getElementById('myui-confirm-dialog');
+            const myuiToggle = document.getElementById('myui-toggle');
+
+            // Apply the pending toggle value
+            if (pendingToggleValue !== null) {
+                myuiToggle.checked = pendingToggleValue;
+                updateToggleStatus(pendingToggleValue);
+                updateMyUiSettingWithRestart(pendingToggleValue);
+                pendingToggleValue = null;
+            }
+
+            confirmDialog.close();
+        }
+
+        function cancelToggleOff() {
+            const confirmDialog = document.getElementById('myui-confirm-dialog');
+
+            // Reset pending value
+            pendingToggleValue = null;
+
+            confirmDialog.close();
+        }
+
+        function handleConfirmDialogNavigation(event) {
+            const activeElement = document.activeElement;
+
+            // Handle B button / Escape to cancel
+            if (event.key === 'Escape') {
+                playSound('back');
+                cancelToggleOff();
+                event.preventDefault();
+                return;
+            }
+
+            // Handle Enter on buttons
+            if (event.key === 'Enter' &&
+                activeElement && (activeElement.id === 'myui-confirm-yes' || activeElement.id === 'myui-confirm-no')) {
+                // Let the button's click handler take care of it
+                event.preventDefault();
+                activeElement.click();
+                return;
+            }
+
+            // Handle navigation with Left/Right arrows or gamepad D-pad
+            if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+                playSound('nav');
+                confirmDialogFocusIndex = Math.max(0, confirmDialogFocusIndex - 1);
+                focusConfirmDialogElement();
+                event.preventDefault();
+                return;
+            }
+
+            if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+                playSound('nav');
+                confirmDialogFocusIndex = Math.min(confirmDialogElements.length - 1, confirmDialogFocusIndex + 1);
+                focusConfirmDialogElement();
+                event.preventDefault();
+                return;
+            }
+        }
+
+        function focusConfirmDialogElement() {
+            const elementId = confirmDialogElements[confirmDialogFocusIndex];
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.focus();
+            }
+        }
+
+        // Inactivity hiding functionality
+        function setupInactivityHiding() {
+            // Load setting from localStorage on page load
+            hideOnInactivityEnabled = loadHideOnInactivitySetting();
+
+            // Add event listeners for user activity
+            const activityEvents = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart', 'click'];
+
+            activityEvents.forEach(event => {
+                document.addEventListener(event, handleUserActivity, true);
+            });
+
+            // Start timer if enabled
+            if (hideOnInactivityEnabled) {
+                startInactivityTimer();
+            }
+        }
+
+        function handleUserActivity() {
+            // Show UI if it's hidden
+            if (isUIHidden) {
+                showUI();
+            }
+
+            // Reset timer if setting is enabled
+            if (hideOnInactivityEnabled) {
+                startInactivityTimer();
+            }
+        }
+
+        function startInactivityTimer() {
+            // Clear existing timer
+            if (inactivityTimer) {
+                clearTimeout(inactivityTimer);
+            }
+
+            // Start new timer
+            inactivityTimer = setTimeout(() => {
+                if (hideOnInactivityEnabled) {
+                    hideUI();
+                }
+            }, INACTIVITY_TIMEOUT);
+        }
+
+        function stopInactivityTimer() {
+            if (inactivityTimer) {
+                clearTimeout(inactivityTimer);
+                inactivityTimer = null;
+            }
+        }
+
+        function hideUI() {
+            if (!isUIHidden) {
+                isUIHidden = true;
+                const uiElements = document.querySelectorAll('.ui-element');
+                uiElements.forEach(element => {
+                    element.classList.add('hidden');
+                });
+            }
+        }
+
+        function showUI() {
+            if (isUIHidden) {
+                isUIHidden = false;
+                const uiElements = document.querySelectorAll('.ui-element');
+                uiElements.forEach(element => {
+                    element.classList.remove('hidden');
+                });
+            }
+        }
+
+        function loadHideOnInactivitySetting() {
+            const saved = localStorage.getItem('hideOnInactivity');
+            // Default to true if no setting has been saved yet
+            return saved === null ? true : saved === 'true';
+        }
+
+        function saveHideOnInactivitySetting(value) {
+            localStorage.setItem('hideOnInactivity', value.toString());
+        }
+
+        function updateHideOnInactivityStatus(isEnabled) {
+            const statusElement = document.getElementById('hide-on-inactivity-status');
+            statusElement.textContent = isEnabled ? 'On' : 'Off';
+        }
+
+        // Battery indicator settings functions
+        function loadHideBatteryIndicatorSetting() {
+            const saved = localStorage.getItem('hideBatteryIndicator');
+            // Default to false (battery indicator visible) if no setting has been saved yet
+            return saved === 'true';
+        }
+
+        function saveHideBatteryIndicatorSetting(value) {
+            localStorage.setItem('hideBatteryIndicator', value.toString());
+        }
+
+        function updateHideBatteryIndicatorStatus(isEnabled) {
+            const statusElement = document.getElementById('hide-battery-indicator-status');
+            statusElement.textContent = isEnabled ? 'On' : 'Off';
+        }
+
+        function toggleBatteryIndicatorVisibility(show) {
+            const batteryIndicator = document.getElementById('battery-indicator');
+            if (batteryIndicator) {
+                batteryIndicator.style.display = show ? 'flex' : 'none';
+            }
+        }
+
+        // Battery Status API Implementation
+        function initBatteryIndicator() {
+            const batteryIndicator = document.getElementById('battery-indicator');
+            const batteryFill = document.getElementById('battery-fill');
+            const batteryPercentage = document.getElementById('battery-percentage');
+
+            // Check if Battery Status API is supported
+            if ('getBattery' in navigator) {
+                navigator.getBattery().then(function (battery) {
+                    // Initial battery status update
+                    updateBatteryDisplay(battery, batteryFill, batteryPercentage, batteryIndicator);
+
+                    // Add event listeners for battery status changes
+                    battery.addEventListener('chargingchange', function () {
+                        updateBatteryDisplay(battery, batteryFill, batteryPercentage, batteryIndicator);
+                    });
+
+                    battery.addEventListener('levelchange', function () {
+                        updateBatteryDisplay(battery, batteryFill, batteryPercentage, batteryIndicator);
+                    });
+
+                    battery.addEventListener('chargingtimechange', function () {
+                        updateBatteryDisplay(battery, batteryFill, batteryPercentage, batteryIndicator);
+                    });
+
+                    battery.addEventListener('dischargingtimechange', function () {
+                        updateBatteryDisplay(battery, batteryFill, batteryPercentage, batteryIndicator);
+                    });
+
+                    console.log('Battery Status API initialized successfully');
+                }).catch(function (error) {
+                    console.warn('Error accessing battery status:', error);
+                    hideBatteryIndicator(batteryIndicator);
+                });
+            } else {
+                console.warn('Battery Status API not supported in this browser');
+                hideBatteryIndicator(batteryIndicator);
+            }
+        }
+
+        function updateBatteryDisplay(battery, batteryFill, batteryPercentage, batteryIndicator) {
+            const level = Math.round(battery.level * 100);
+            const isCharging = battery.charging;
+
+            // Update percentage text
+            batteryPercentage.textContent = level + '%';
+
+            // Update battery fill width (20px is the max width of the battery icon minus borders)
+            const fillWidth = Math.max(2, (level / 100) * 20);
+            batteryFill.style.width = fillWidth + 'px';
+
+            // Remove all level classes
+            batteryFill.classList.remove('high', 'medium', 'low', 'critical');
+
+            // Add appropriate level class based on battery level
+            if (level > 50) {
+                batteryFill.classList.add('high');
+            } else if (level > 20) {
+                batteryFill.classList.add('medium');
+            } else if (level > 10) {
+                batteryFill.classList.add('low');
+            } else {
+                batteryFill.classList.add('critical');
+            }
+
+            // Handle charging state
+            if (isCharging) {
+                batteryIndicator.classList.add('charging');
+                batteryIndicator.title = `Battery: ${level}% (Charging)`;
+            } else {
+                batteryIndicator.classList.remove('charging');
+
+                // Estimate time remaining
+                const dischargingTime = battery.dischargingTime;
+                if (dischargingTime !== Infinity && dischargingTime > 0) {
+                    const hours = Math.floor(dischargingTime / 3600);
+                    const minutes = Math.floor((dischargingTime % 3600) / 60);
+                    batteryIndicator.title = `Battery: ${level}% (${hours}h ${minutes}m remaining)`;
+                } else {
+                    batteryIndicator.title = `Battery: ${level}%`;
+                }
+            }
+
+            console.log(`Battery status updated: ${level}%, charging: ${isCharging}`);
+        }
+
+        function hideBatteryIndicator(batteryIndicator) {
+            batteryIndicator.classList.add('unsupported');
+            console.log('Battery indicator hidden due to API unavailability');
+        }
+
+        // Initialize battery indicator when DOM is loaded
+        document.addEventListener("DOMContentLoaded", function () {
+            // Load battery indicator visibility setting
+            hideBatteryIndicatorEnabled = loadHideBatteryIndicatorSetting();
+
+            // Initialize battery indicator after a short delay to ensure other systems are loaded
+            setTimeout(function () {
+                initBatteryIndicator();
+                // Apply saved visibility setting
+                toggleBatteryIndicatorVisibility(!hideBatteryIndicatorEnabled);
+            }, 500);
+        });
+    </script>
+</body>
+</html>
