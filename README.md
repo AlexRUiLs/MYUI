@@ -15,8 +15,8 @@ Get all games: http://localhost:8080/GetAllGames
 
 Request game launch: http://localhost:8080/LaunchGame?Id=<game.Id>&Store=<game.Store>
 
-Close application window: http://localhost:8080/CloseAppWindow
+Close application window: window.chrome.webview.postMessage({ action: 'close' });
 
-Minimiza application window: http://localhost:8080/MinimizeAppWindow
+Minimiza application window: window.chrome.webview.postMessage({ action: 'minimize' });
 
-Close/Minimize app according to Settings: http://localhost:8080/CloseOrMinimizeAppWindowAfterGameLaunch
+Close/Minimize app according to Settings: window.chrome.webview.postMessage({ action: 'closeOrMinimizeAppWindowAfterGameLaunch' });
